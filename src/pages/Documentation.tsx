@@ -521,7 +521,7 @@ const DocumentationPage = () => {
               <InfoCard title="Classification → CRM Status Mapping">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead><TableRow header cells={["LeadCapture", "HubSpot", "Salesforce"]} /></thead>
+                    <thead><TableRow header cells={["Kapture", "HubSpot", "Salesforce"]} /></thead>
                     <tbody>
                       <TableRow cells={["hot", "Sales Qualified Lead", "Hot"]} />
                       <TableRow cells={["warm", "Marketing Qualified Lead", "Warm"]} />
