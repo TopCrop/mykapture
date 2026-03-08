@@ -29,15 +29,15 @@ import {
 } from "@/components/ui/sidebar";
 
 const allMainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Events", url: "/events", icon: Calendar, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager"] },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Events", url: "/events", icon: Calendar, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager", "super_admin"] },
 ];
 
 const allSettingsItems = [
-  { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin"] },
+  { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin", "super_admin"] },
 ];
 
 const roleLabels: Record<string, string> = {
