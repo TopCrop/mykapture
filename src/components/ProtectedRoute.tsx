@@ -23,7 +23,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {
-    return <Navigate to="/leads" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
