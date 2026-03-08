@@ -202,9 +202,10 @@ export function useDeleteLead() {
 
 export function useCreateFollowUpBooking() {
   const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   return useMutation({
     mutationFn: async (booking: Omit<FollowUpBookingInsert, "id" | "created_at" | "updated_at" | "status">) => {
-      const { data, error } = await supabase.from("follow_up_bookings").insert(booking).select().single();
+      const { data, error } = await supabase.from("follow_up_bookings").insert({ ...booking, org_id: orgId } as any).select().single();
       if (error) throw error;
       return data;
     },
