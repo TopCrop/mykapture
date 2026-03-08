@@ -19,6 +19,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import BrandGuidelines from "./pages/BrandGuidelines";
 import OrgSetupPage from "./pages/OrgSetup";
+import SuperAdminPage from "./pages/SuperAdmin";
 import { useEffect } from "react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/analytics" element={<ProtectedRoute allowedRoles={["admin", "manager", "super_admin"]}><AnalyticsPage /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/docs" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><DocumentationPage /></ProtectedRoute>} />
+              <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPage /></ProtectedRoute>} />
               <Route path="/brand" element={<BrandGuidelines />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

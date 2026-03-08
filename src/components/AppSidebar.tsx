@@ -6,6 +6,7 @@ import {
   Settings,
   FileText,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { useMyProfile } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
@@ -38,6 +39,7 @@ const allMainItems = [
 const allSettingsItems = [
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep", "super_admin"] },
   { title: "Docs", url: "/docs", icon: FileText, roles: ["admin", "super_admin"] },
+  { title: "Super Admin", url: "/super-admin", icon: ShieldCheck, roles: ["super_admin"] },
 ];
 
 const roleLabels: Record<string, string> = {
