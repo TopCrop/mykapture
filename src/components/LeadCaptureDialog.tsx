@@ -343,7 +343,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Event</Label>
-                <Select value={eventId} onValueChange={setEventId}>
+                <Select value={eventId} onValueChange={handleEventChange}>
                   <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
                   <SelectContent>
                     {events?.map((e) => (
