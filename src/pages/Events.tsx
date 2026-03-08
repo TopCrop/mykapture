@@ -113,13 +113,28 @@ const EventsPage = () => {
           </div>
         )}
 
-        {events.length === 0 ? (
+        {/* Status filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {["all", "active", "upcoming", "completed"].map((s) => (
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              className="text-xs h-7 capitalize"
+              onClick={() => setStatusFilter(s)}
+            >
+              {s === "all" ? "All" : s}
+            </Button>
+          ))}
+        </div>
+
+        {filteredEvents.length === 0 ? (
           <div className="glass-card rounded-xl p-8 text-center text-sm text-muted-foreground">
-            {isLoading ? "Loading..." : "No events yet."}
+            {isLoading ? "Loading..." : statusFilter !== "all" ? `No ${statusFilter} events.` : "No events yet."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map((event, i) => {
+            {filteredEvents.map((event, i) => {
               const leadCount = leads.filter((l) => l.event_id === event.id).length;
               const hotCount = leads.filter((l) => l.event_id === event.id && l.classification === "hot").length;
 

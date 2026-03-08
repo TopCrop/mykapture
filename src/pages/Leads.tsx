@@ -337,7 +337,8 @@ const LeadsPage = () => {
   const filtered = displayLeads.filter((lead) => {
     const matchesSearch = !search || lead.name.toLowerCase().includes(search.toLowerCase()) || (lead.company || "").toLowerCase().includes(search.toLowerCase());
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
-    return matchesSearch && matchesClass;
+    const matchesFollowup = followupFilter === "all" || (followupFilter === "sent" && lead.follow_up_email_sent);
+    return matchesSearch && matchesClass && matchesFollowup;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / LEADS_PER_PAGE));
