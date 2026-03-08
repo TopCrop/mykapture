@@ -82,9 +82,9 @@ const SuperAdminPage = () => {
     <DashboardLayout title="Super Admin" subtitle="Platform-wide organization management">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <StatCard title="Organizations" value={totals.orgs} icon={Building2} loading={isLoading} />
-        <StatCard title="Total Members" value={totals.members} icon={Users} loading={isLoading} />
-        <StatCard title="Total Leads" value={totals.leads} icon={Target} loading={isLoading} />
+        <StatCard title="Organizations" value={isLoading ? "—" : totals.orgs} icon={Building2} />
+        <StatCard title="Total Members" value={isLoading ? "—" : totals.members} icon={Users} />
+        <StatCard title="Total Leads" value={isLoading ? "—" : totals.leads} icon={Target} />
       </div>
 
       {/* Search */}
