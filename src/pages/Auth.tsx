@@ -64,6 +64,15 @@ const AuthPage = () => {
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (view === "signup" && value.includes("@")) {
+      setEmailError(getEmailDomainError(value));
+    } else {
+      setEmailError(null);
+    }
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -73,6 +82,12 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       } else if (view === "signup") {
+        const domainErr = getEmailDomainError(email);
+        if (domainErr) {
+          setEmailError(domainErr);
+          toast.error(domainErr);
+          return;
+        }
         if (!getPasswordStrength(password)) {
           toast.error("Please meet all password requirements.");
           return;
