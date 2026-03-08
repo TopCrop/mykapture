@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Copy, Check, Loader2, X, Clock, RefreshCw, AlertTriangle } from "lucide-react";
 import { useCreateInvitation, useInvitations, useDeleteInvitation, useResendInvitation } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 function isExpired(expiresAt: string): boolean {
