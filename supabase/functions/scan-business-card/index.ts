@@ -29,16 +29,17 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
+        max_tokens: 300,
         messages: [
           {
             role: "system",
-            content: "You are a business card OCR extraction tool. Extract contact information from the business card image. You MUST respond by calling the extract_contact tool.",
+            content: "Extract contact info from the business card image. Call the extract_contact tool.",
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract all contact information from this business card image." },
+              { type: "text", text: "Extract contact information from this business card." },
               { type: "image_url", image_url: { url: `data:image/jpeg;base64,${imageBase64}` } },
             ],
           },

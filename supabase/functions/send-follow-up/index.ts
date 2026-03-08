@@ -27,10 +27,10 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch lead details
+    // Fetch only needed lead columns
     const { data: lead, error: leadErr } = await supabase
       .from("leads")
-      .select("*")
+      .select("id,name,title,company,email,notes,bant_need,captured_by")
       .eq("id", leadId)
       .single();
 
@@ -48,26 +48,27 @@ serve(async (req) => {
       });
     }
 
-    // Fetch the capturing user's profile
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("user_id", lead.captured_by)
-      .single();
+    // Fetch sender name and booking in parallel
+    const [profileRes, bookingRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", lead.captured_by)
+        .single(),
+      supabase
+        .from("follow_up_bookings")
+        .select("follow_up_date,meeting_type")
+        .eq("lead_id", leadId)
+        .eq("status", "scheduled")
+        .order("follow_up_date", { ascending: true })
+        .limit(1)
+        .single(),
+    ]);
 
-    const senderName = profile?.display_name || "Our Team";
+    const senderName = profileRes.data?.display_name || "Our Team";
+    const booking = bookingRes.data;
 
-    // Fetch any follow-up booking
-    const { data: booking } = await supabase
-      .from("follow_up_bookings")
-      .select("*")
-      .eq("lead_id", leadId)
-      .eq("status", "scheduled")
-      .order("follow_up_date", { ascending: true })
-      .limit(1)
-      .single();
-
-    // Generate personalized follow-up email using AI
+    // Generate personalized follow-up email using cheapest model
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -76,22 +77,20 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
+        max_tokens: 400,
         messages: [
           {
             role: "system",
-            content: `You are a professional B2B sales follow-up email writer. Write concise, personalized emails. The sender is ${senderName}. You MUST call the generate_email tool.`,
+            content: `You are a B2B sales email writer. Write a concise follow-up email. Sender: ${senderName}. Call the generate_email tool.`,
           },
           {
             role: "user",
-            content: `Write a follow-up email for:
-- Lead name: ${lead.name}
-- Title: ${lead.title || "N/A"}
-- Company: ${lead.company || "N/A"}
+            content: `Follow-up email for:
+- Name: ${lead.name}, Title: ${lead.title || "N/A"}, Company: ${lead.company || "N/A"}
 - Needs: ${lead.bant_need?.join(", ") || "N/A"}
 - Notes: ${lead.notes || "N/A"}
-- Meeting scheduled: ${booking ? `Yes, on ${new Date(booking.follow_up_date).toLocaleString()} (${booking.meeting_type})` : "No meeting scheduled yet"}
-
-Keep it professional, warm, and under 150 words.`,
+- Meeting: ${booking ? `${new Date(booking.follow_up_date).toLocaleString()} (${booking.meeting_type})` : "None scheduled"}
+Keep under 150 words.`,
           },
         ],
         tools: [
@@ -151,7 +150,7 @@ Keep it professional, warm, and under 150 words.`,
         subject: emailContent.subject,
         body: emailContent.body,
       },
-      message: "Follow-up email generated. In production, this would be sent via your email provider. For now, the email content is returned for preview.",
+      message: "Follow-up email generated.",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
