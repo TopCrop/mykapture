@@ -114,7 +114,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setEventId(val);
     checkDuplicate(email, phone, val);
   };
-
+  const [bookFollowUp, setBookFollowUp] = useState(false);
 
   const scoring = calculateLeadScore({
     title,
