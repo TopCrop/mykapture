@@ -22,14 +22,17 @@ const ResetPassword = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check URL search params for PKCE flow
+    // Check URL for hash fragments (implicit flow) or search params (PKCE flow)
+    const hash = window.location.hash;
     const params = new URLSearchParams(window.location.search);
     const tokenHash = params.get("token_hash");
     const type = params.get("type");
 
     if (tokenHash && type === "recovery") {
+      // PKCE flow
       supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).then(({ error }) => {
         if (error) {
+          console.error("PKCE verify failed:", error.message);
           toast.error("Reset link is invalid or has expired. Please request a new one.");
         }
         setReady(true);
@@ -37,13 +40,36 @@ const ResetPassword = () => {
       return;
     }
 
-    // For implicit flow, give onAuthStateChange time to fire PASSWORD_RECOVERY
-    const timer = setTimeout(() => setReady(true), 1500);
+    // Implicit flow: tokens come in hash fragment
+    // e.g. #access_token=...&type=recovery
+    if (hash && hash.includes("type=recovery")) {
+      // Supabase client auto-processes the hash via onAuthStateChange
+      // Wait for PASSWORD_RECOVERY event
+      const timer = setTimeout(() => setReady(true), 2500);
+      return () => clearTimeout(timer);
+    }
+
+    // Also check if tokens are in search params (some email clients strip hash)
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    if (accessToken && refreshToken) {
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
+        if (error) {
+          console.error("Session set failed:", error.message);
+          toast.error("Reset link is invalid or has expired.");
+        }
+        setReady(true);
+      });
+      return;
+    }
+
+    // No tokens found — give implicit flow listener a moment, then show error
+    const timer = setTimeout(() => setReady(true), 2500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Determine if we're in recovery mode from either PKCE verification or implicit flow event
-  const canReset = isPasswordRecovery || (ready && user != null && window.location.hash.includes("type=recovery"));
+  // Determine if we're in recovery mode from PKCE, implicit flow event, or session set
+  const canReset = isPasswordRecovery || (ready && user != null);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
