@@ -4,6 +4,7 @@ import {
   Calendar,
   BarChart3,
   Settings,
+  FileText,
   Zap,
   LogOut,
 } from "lucide-react";
