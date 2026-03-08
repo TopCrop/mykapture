@@ -88,12 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = userRole === "admin";
+  const isAdmin = userRole === "admin" || userRole === "super_admin";
   const isManager = userRole === "manager";
   const isSalesRep = userRole === "sales_rep";
+  const isSuperAdmin = userRole === "super_admin";
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, userRole, isAdmin, isManager, isSalesRep, isPasswordRecovery, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, userRole, isAdmin, isManager, isSalesRep, isSuperAdmin, isPasswordRecovery, signOut }}>
       {children}
     </AuthContext.Provider>
   );
