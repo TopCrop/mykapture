@@ -418,6 +418,11 @@ const Index = () => {
                   ))}
                 </tbody>
               </table>
+              <div className="px-5 py-2.5 border-t border-border">
+                <p className="text-[11px] text-muted-foreground">
+                  Showing {Math.min(10, filteredLeads.length)} of {filteredLeads.length} leads
+                </p>
+              </div>
             </div>
           )}
         </motion.div>

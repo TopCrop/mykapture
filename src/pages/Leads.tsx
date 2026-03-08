@@ -110,6 +110,7 @@ const LEADS_PER_PAGE = 25;
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
+  const { data: profiles = [] } = useProfiles();
   const { user, isSalesRep, isAdmin } = useAuth();
   const deleteLead = useDeleteLead();
   const [searchParams, setSearchParams] = useSearchParams();
