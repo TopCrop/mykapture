@@ -49,6 +49,7 @@ export type Database = {
           id: string
           location: string | null
           name: string
+          org_id: string | null
           status: string
           updated_at: string
         }
@@ -59,6 +60,7 @@ export type Database = {
           id?: string
           location?: string | null
           name: string
+          org_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -69,10 +71,19 @@ export type Database = {
           id?: string
           location?: string | null
           name?: string
+          org_id?: string | null
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       follow_up_bookings: {
         Row: {
@@ -87,6 +98,7 @@ export type Database = {
           lead_id: string
           meeting_type: string
           notes: string | null
+          org_id: string | null
           status: string
           updated_at: string
         }
@@ -102,6 +114,7 @@ export type Database = {
           lead_id: string
           meeting_type?: string
           notes?: string | null
+          org_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -117,6 +130,7 @@ export type Database = {
           lead_id?: string
           meeting_type?: string
           notes?: string | null
+          org_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -126,6 +140,13 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_bookings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -148,6 +169,7 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          org_id: string | null
           phone: string | null
           score: number
           sync_status: string
@@ -175,6 +197,7 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          org_id?: string | null
           phone?: string | null
           score?: number
           sync_status?: string
@@ -202,6 +225,7 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          org_id?: string | null
           phone?: string | null
           score?: number
           sync_status?: string
@@ -220,7 +244,70 @@ export type Database = {
             referencedRelation: "events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "leads_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      org_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          domain: string
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -228,6 +315,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          org_id: string | null
           phone: string | null
           team: string | null
           territory: string | null
@@ -239,6 +327,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          org_id?: string | null
           phone?: string | null
           team?: string | null
           territory?: string | null
@@ -250,13 +339,22 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           id?: string
+          org_id?: string | null
           phone?: string | null
           team?: string | null
           territory?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -290,6 +388,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_user_org_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -297,6 +396,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "sales_rep" | "manager" | "super_admin"
