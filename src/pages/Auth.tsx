@@ -267,7 +267,7 @@ const AuthPage = () => {
                   </div>
                   {view === "signup" && <PasswordStrengthIndicator password={password} />}
                 </div>
-                <Button type="submit" className="w-full" disabled={loading || (view === "signup" && !getPasswordStrength(password))}>
+                <Button type="submit" className="w-full" disabled={loading || (view === "signup" && (!getPasswordStrength(password) || !!emailError))}>
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   {view === "login" ? "Sign In" : "Create Account"}
                 </Button>
