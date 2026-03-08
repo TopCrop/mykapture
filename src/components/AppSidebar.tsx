@@ -7,6 +7,7 @@ import {
   FileText,
   LogOut,
 } from "lucide-react";
+import { useProfiles } from "@/hooks/useData";
 import { NavLink } from "@/components/NavLink";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -44,7 +45,10 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user, userRole, signOut } = useAuth();
   const isActive = (path: string) => location.pathname === path;
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+  const { data: profiles = [] } = useProfiles();
+  const userProfile = profiles.find((p: any) => p.user_id === user?.id);
+  const avatarUrl = userProfile?.avatar_url;
+  const displayName = userProfile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const role = userRole ?? "sales_rep";
@@ -141,9 +145,13 @@ export function AppSidebar() {
               onClick={() => navigate("/settings?tab=profile")}
               className="flex w-full items-center gap-2.5 rounded-lg bg-sidebar-accent/80 border border-border p-2.5 hover:bg-sidebar-accent transition-colors cursor-pointer"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-xs font-bold text-primary border border-primary/20">
-                {initials}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="h-8 w-8 rounded-md object-cover border border-primary/20" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-xs font-bold text-primary border border-primary/20">
+                  {initials}
+                </div>
+              )}
               <div className="flex-1 min-w-0 text-left">
                 <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
                 <p className="truncate text-[10px] text-muted-foreground">{user?.email}</p>
