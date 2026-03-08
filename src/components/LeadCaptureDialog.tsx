@@ -385,7 +385,28 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 )}
               </div>
 
-              <Button className="w-full" onClick={() => setStep(2)} disabled={!name.trim()}>
+              {/* Duplicate warning */}
+              {duplicateInfo?.is_duplicate && (
+                <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    {duplicateInfo.is_own ? (
+                      <>
+                        You already captured <strong>{duplicateInfo.lead_name}</strong> at this event.{" "}
+                        <span className="underline cursor-pointer" onClick={() => { resetForm(); onClose(); }}>
+                          Edit the existing lead instead.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>{duplicateInfo.lead_name}</strong> was already captured at this event by <strong>{duplicateInfo.captured_by_name || "another team member"}</strong>. Creating a duplicate is not recommended.
+                      </>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button className="w-full" onClick={() => setStep(2)} disabled={!name.trim() || (duplicateInfo?.is_duplicate && duplicateInfo?.is_own)}>
                 Next: Qualification
               </Button>
             </div>
