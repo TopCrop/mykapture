@@ -45,7 +45,10 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user, userRole, signOut } = useAuth();
   const isActive = (path: string) => location.pathname === path;
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+  const { data: profiles = [] } = useProfiles();
+  const userProfile = profiles.find((p: any) => p.user_id === user?.id);
+  const avatarUrl = userProfile?.avatar_url;
+  const displayName = userProfile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
   const role = userRole ?? "sales_rep";
