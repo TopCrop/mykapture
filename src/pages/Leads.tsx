@@ -5,15 +5,109 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus } from "lucide-react";
+import { Search, Filter, Plus, Mail, Loader2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
+import { toast } from "sonner";
 import type { LeadClassification, SyncStatus } from "@/types/lead";
 import type { Database } from "@/integrations/supabase/types";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+
+function FollowUpEmailButton({ lead }: { lead: LeadRow }) {
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [emailPreview, setEmailPreview] = useState<{ to: string; subject: string; body: string } | null>(null);
+
+  const sendFollowUp = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!lead.email) {
+      toast.error("This lead has no email address.");
+      return;
+    }
+    setSending(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-follow-up`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ leadId: lead.id }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to send");
+      }
+
+      const data = await response.json();
+      setEmailPreview(data.email);
+      setSent(true);
+      toast.success("Follow-up email generated!");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to generate follow-up");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-7 gap-1 text-xs"
+        onClick={sendFollowUp}
+        disabled={sending || !lead.email}
+        title={!lead.email ? "No email address" : "Send follow-up email"}
+      >
+        {sending ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : sent ? (
+          <Check className="h-3 w-3 text-primary" />
+        ) : (
+          <Mail className="h-3 w-3" />
+        )}
+      </Button>
+
+      {emailPreview && (
+        <Dialog open={!!emailPreview} onOpenChange={() => setEmailPreview(null)}>
+          <DialogContent className="max-w-md" onClick={(e) => e.stopPropagation()}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-sm">
+                <Mail className="h-4 w-4 text-primary" />
+                Follow-Up Email Preview
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div>
+                <span className="text-xs text-muted-foreground">To:</span>
+                <p className="font-medium">{emailPreview.to}</p>
+              </div>
+              <div>
+                <span className="text-xs text-muted-foreground">Subject:</span>
+                <p className="font-medium">{emailPreview.subject}</p>
+              </div>
+              <div className="border-t pt-3">
+                <span className="text-xs text-muted-foreground">Body:</span>
+                <p className="whitespace-pre-wrap mt-1 text-sm">{emailPreview.body}</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground italic border-t pt-2">
+                Connect an email provider in Settings to send emails automatically.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
 
 function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | null; open: boolean; onClose: () => void; events: Database["public"]["Tables"]["events"]["Row"][] }) {
   if (!lead) return null;
@@ -65,7 +159,7 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
           {lead.notes && (
             <div className="border-t pt-3">
               <h4 className="text-xs font-semibold text-muted-foreground mb-1">NOTES</h4>
-              <p className="text-sm">{lead.notes}</p>
+              <p className="text-sm whitespace-pre-wrap">{lead.notes}</p>
             </div>
           )}
 
@@ -140,6 +234,7 @@ const LeadsPage = () => {
                     <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">Budget</th>
                     <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">Authority</th>
                     <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Sync</th>
+                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground">Follow-up</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -155,6 +250,9 @@ const LeadsPage = () => {
                       <td className="px-5 py-3 hidden lg:table-cell text-xs">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                       <td className="px-5 py-3 hidden lg:table-cell text-xs">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                       <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
+                      <td className="px-5 py-3">
+                        <FollowUpEmailButton lead={lead} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

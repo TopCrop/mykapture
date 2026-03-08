@@ -61,6 +61,33 @@ export function useCreateLead() {
   });
 }
 
+export function useCreateFollowUpBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (booking: { lead_id: string; booked_by: string; follow_up_date: string; duration_minutes?: number; meeting_type?: string; notes?: string }) => {
+      const { data, error } = await supabase.from("follow_up_bookings" as any).insert(booking).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["follow_up_bookings"] });
+    },
+  });
+}
+
+export function useFollowUpBookings(leadId?: string) {
+  return useQuery({
+    queryKey: ["follow_up_bookings", leadId],
+    queryFn: async () => {
+      let query = supabase.from("follow_up_bookings" as any).select("*").order("follow_up_date", { ascending: true });
+      if (leadId) query = query.eq("lead_id", leadId);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
 export function useCreateEvent() {
   const queryClient = useQueryClient();
   return useMutation({

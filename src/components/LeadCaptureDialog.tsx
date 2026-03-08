@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateLead, useEvents, calculateLeadScore } from "@/hooks/useData";
+import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore } from "@/hooks/useData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { ClassificationBadge } from "@/components/LeadBadges";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import { VoiceNoteRecorder } from "@/components/VoiceNoteRecorder";
-import { Loader2, Sparkles, Camera, Mic } from "lucide-react";
+import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 import type { LeadClassification } from "@/types/lead";
 
 const NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"];
@@ -25,6 +29,7 @@ interface LeadCaptureDialogProps {
 export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
   const { user } = useAuth();
   const createLead = useCreateLead();
+  const createBooking = useCreateFollowUpBooking();
   const { data: events } = useEvents();
   const [step, setStep] = useState(1);
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -50,6 +55,13 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
   const [transcription, setTranscription] = useState("");
 
+  // Calendar booking
+  const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
+  const [followUpTime, setFollowUpTime] = useState("10:00");
+  const [followUpDuration, setFollowUpDuration] = useState("30");
+  const [meetingType, setMeetingType] = useState("call");
+  const [bookFollowUp, setBookFollowUp] = useState(false);
+
   const scoring = calculateLeadScore({
     title,
     bant_budget: budget || null,
@@ -68,6 +80,8 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
     setVoiceNoteUrl(""); setTranscription("");
+    setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
+    setMeetingType("call"); setBookFollowUp(false);
   };
 
   const handleCardScanned = (contact: { name?: string; title?: string; company?: string; email?: string; phone?: string; website?: string }) => {
@@ -87,7 +101,6 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
     } else {
       setNotes((prev) => prev ? `${prev}\n\n[Voice note] ${result.transcription}` : `[Voice note] ${result.transcription}`);
     }
-    // Auto-fill extracted info if fields are empty
     if (!name && result.extracted_name) setName(result.extracted_name);
     if (!company && result.extracted_company) setCompany(result.extracted_company);
   };
@@ -96,7 +109,7 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
     if (!user) return;
     const finalClassification = classOverride || scoring.classification;
     try {
-      await createLead.mutateAsync({
+      const leadData = await createLead.mutateAsync({
         name,
         title: title || null,
         company: company || null,
@@ -115,6 +128,22 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
         classification: finalClassification,
         captured_by: user.id,
       });
+
+      // Create follow-up booking if scheduled
+      if (bookFollowUp && followUpDate && leadData) {
+        const [hours, minutes] = followUpTime.split(":").map(Number);
+        const bookingDate = new Date(followUpDate);
+        bookingDate.setHours(hours, minutes, 0, 0);
+
+        await createBooking.mutateAsync({
+          lead_id: leadData.id,
+          booked_by: user.id,
+          follow_up_date: bookingDate.toISOString(),
+          duration_minutes: parseInt(followUpDuration),
+          meeting_type: meetingType,
+        });
+      }
+
       toast.success("Lead captured successfully!");
       resetForm();
       onClose();
@@ -254,6 +283,82 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
                   ))}
                 </div>
               </div>
+
+              {/* Calendar Booking */}
+              <div className="border-t pt-3 space-y-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox checked={bookFollowUp} onCheckedChange={(c) => setBookFollowUp(!!c)} />
+                  <span className="text-sm font-medium flex items-center gap-1.5">
+                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                    Schedule Follow-Up
+                  </span>
+                </label>
+
+                {bookFollowUp && (
+                  <div className="space-y-3 pl-6">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Date</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-xs", !followUpDate && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {followUpDate ? format(followUpDate, "PPP") : "Pick date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={followUpDate}
+                              onSelect={setFollowUpDate}
+                              disabled={(date) => date < new Date()}
+                              initialFocus
+                              className={cn("p-3 pointer-events-auto")}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Time</Label>
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Input type="time" value={followUpTime} onChange={(e) => setFollowUpTime(e.target.value)} className="text-xs" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Duration</Label>
+                        <Select value={followUpDuration} onValueChange={setFollowUpDuration}>
+                          <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="15">15 min</SelectItem>
+                            <SelectItem value="30">30 min</SelectItem>
+                            <SelectItem value="45">45 min</SelectItem>
+                            <SelectItem value="60">1 hour</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Type</Label>
+                        <Select value={meetingType} onValueChange={setMeetingType}>
+                          <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="call">Phone Call</SelectItem>
+                            <SelectItem value="video">Video Call</SelectItem>
+                            <SelectItem value="in_person">In Person</SelectItem>
+                            <SelectItem value="email">Email</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground italic">
+                      Calendar integrations (Google, Microsoft, Apple) coming soon via Settings.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
                 <Button className="flex-1" onClick={() => setStep(3)}>Next: Review</Button>
@@ -301,6 +406,13 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Mic className="h-3.5 w-3.5 text-primary" />
                   <span>Voice note attached</span>
+                </div>
+              )}
+
+              {bookFollowUp && followUpDate && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                  <span>Follow-up: {format(followUpDate, "PPP")} at {followUpTime} ({followUpDuration} min {meetingType})</span>
                 </div>
               )}
 
