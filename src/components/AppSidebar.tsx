@@ -161,10 +161,15 @@ export function AppSidebar() {
               )}
               <div className="flex-1 min-w-0 text-left">
                 <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium border-primary/30 text-primary">
                     {roleLabels[role] || role}
                   </Badge>
+                  {org && (
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 font-medium">
+                      {org.name}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </button>
