@@ -24,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isManager: false,
   isSalesRep: false,
+  isPasswordRecovery: false,
   signOut: async () => {},
 });
 
