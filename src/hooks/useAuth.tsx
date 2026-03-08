@@ -12,6 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isManager: boolean;
   isSalesRep: boolean;
+  isSuperAdmin: boolean;
   isPasswordRecovery: boolean;
   signOut: () => Promise<void>;
 }
