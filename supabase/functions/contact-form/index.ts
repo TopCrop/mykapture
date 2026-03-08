@@ -21,24 +21,6 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
-    }
-
-    // Send notification email via Lovable transactional email
-    const emailBody = `
-New Contact Form Submission from Kapture Landing Page
-
-Name: ${name}
-Email: ${email}
-Mobile: ${mobile || "Not provided"}
-Reason: ${reason}
-
----
-This is an automated notification from your Kapture app.
-    `.trim();
-
     // Store in database for record keeping
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -53,6 +35,40 @@ This is an automated notification from your Kapture app.
       },
       body: JSON.stringify({ name, email, mobile: mobile || null, reason }),
     });
+
+    // Send email notification via Resend
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (RESEND_API_KEY) {
+      const emailRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+        },
+        body: JSON.stringify({
+          from: "Kapture <onboarding@resend.dev>",
+          to: ["vishalmarketing247@gmail.com"],
+          subject: `New Contact: ${name} - Kapture`,
+          html: `
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            <p><strong>Mobile:</strong> ${mobile || "Not provided"}</p>
+            <p><strong>Reason:</strong></p>
+            <p>${reason}</p>
+            <hr/>
+            <p style="color:#888;font-size:12px;">Sent from Kapture Landing Page</p>
+          `,
+        }),
+      });
+
+      if (!emailRes.ok) {
+        const errBody = await emailRes.text();
+        console.error("Resend error:", errBody);
+      }
+    } else {
+      console.warn("RESEND_API_KEY not set, skipping email notification");
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: "Thank you! We'll be in touch soon." }),
