@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { LeadClassification, SyncStatus } from "@/types/lead";
 import type { Database } from "@/integrations/supabase/types";
