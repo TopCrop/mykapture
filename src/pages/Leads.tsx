@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X, Trash2 } from "lucide-react";
+import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -306,6 +307,8 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
   );
 }
 
+const LEADS_PER_PAGE = 25;
+
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
@@ -315,6 +318,7 @@ const LeadsPage = () => {
   const [classFilter, setClassFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Sales reps only see their own leads
   const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
@@ -324,6 +328,14 @@ const LeadsPage = () => {
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
     return matchesSearch && matchesClass;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LEADS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedLeads = filtered.slice((safeCurrentPage - 1) * LEADS_PER_PAGE, safeCurrentPage * LEADS_PER_PAGE);
+
+  // Reset page when filters change
+  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); };
+  const handleClassFilter = (value: string) => { setClassFilter(value); setCurrentPage(1); };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -359,14 +371,14 @@ const LeadsPage = () => {
   };
 
   return (
-    <DashboardLayout title="Leads" subtitle={`${filtered.length} ${isSalesRep ? "my " : ""}leads captured`}>
+    <DashboardLayout title="Leads" subtitle={`${filtered.length} ${isSalesRep ? "my " : ""}leads captured${totalPages > 1 ? ` · Page ${safeCurrentPage}/${totalPages}` : ""}`}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search leads..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+            <Input placeholder="Search leads..." value={search} onChange={(e) => handleSearch(e.target.value)} className="pl-9" />
           </div>
-          <Select value={classFilter} onValueChange={setClassFilter}>
+          <Select value={classFilter} onValueChange={handleClassFilter}>
             <SelectTrigger className="w-full sm:w-[180px]">
               <Filter className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Classification" />
@@ -387,80 +399,114 @@ const LeadsPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card overflow-hidden">
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="p-5 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24 hidden md:block" />
+                  <Skeleton className="h-5 w-14" />
+                  <Skeleton className="h-4 w-10 hidden sm:block" />
+                  <Skeleton className="h-4 w-16 hidden lg:block" />
+                  <Skeleton className="h-4 w-16 hidden lg:block" />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
-              {isLoading ? "Loading..." : displayLeads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
+              {displayLeads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Score</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((lead) => (
-                    <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
-                      <td className="px-5 py-3">
-                        <p className="font-medium">{lead.name}</p>
-                        <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
-                      </td>
-                      <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
-                      <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
-                      <td className="px-5 py-3 hidden sm:table-cell"><ScoreBadge score={lead.score} /></td>
-                      <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
-                      <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
-                      <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
-                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-xs hover:bg-secondary hover:text-primary"
-                            onClick={() => setSelectedLead(lead)}
-                            title="View / Edit lead"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <FollowUpEmailButton lead={lead} />
-                          {isAdmin && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Lead</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{lead.name}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={(e) => handleDelete(lead.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Score</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedLeads.map((lead) => (
+                      <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        <td className="px-5 py-3">
+                          <p className="font-medium">{lead.name}</p>
+                          <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
+                        </td>
+                        <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
+                        <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
+                        <td className="px-5 py-3 hidden sm:table-cell"><ScoreBadge score={lead.score} /></td>
+                        <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
+                        <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
+                        <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
+                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs hover:bg-secondary hover:text-primary" onClick={() => setSelectedLead(lead)} title="View / Edit lead">
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <FollowUpEmailButton lead={lead} />
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+                                    <AlertDialogDescription>Are you sure you want to delete "{lead.name}"? This action cannot be undone.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={(e) => handleDelete(lead.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+                  <p className="text-[11px] text-muted-foreground">
+                    Showing {(safeCurrentPage - 1) * LEADS_PER_PAGE + 1}–{Math.min(safeCurrentPage * LEADS_PER_PAGE, filtered.length)} of {filtered.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage(safeCurrentPage - 1)}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let page: number;
+                      if (totalPages <= 5) page = i + 1;
+                      else if (safeCurrentPage <= 3) page = i + 1;
+                      else if (safeCurrentPage >= totalPages - 2) page = totalPages - 4 + i;
+                      else page = safeCurrentPage - 2 + i;
+                      return (
+                        <Button key={page} variant={page === safeCurrentPage ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0 text-xs" onClick={() => setCurrentPage(page)}>
+                          {page}
+                        </Button>
+                      );
+                    })}
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage(safeCurrentPage + 1)}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </motion.div>
       </div>

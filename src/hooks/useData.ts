@@ -216,7 +216,7 @@ export function useFollowUpBookings(leadId?: string) {
   return useQuery({
     queryKey: ["follow_up_bookings", leadId],
     queryFn: async () => {
-      let query = supabase.from("follow_up_bookings").select("*").order("follow_up_date", { ascending: true });
+      let query = supabase.from("follow_up_bookings").select("id,lead_id,booked_by,follow_up_date,duration_minutes,meeting_type,status,notes,calendar_provider,external_event_id,external_event_url,created_at,updated_at").order("follow_up_date", { ascending: true });
       if (leadId) query = query.eq("lead_id", leadId);
       const { data, error } = await query;
       if (error) throw error;
