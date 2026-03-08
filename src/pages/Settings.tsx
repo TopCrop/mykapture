@@ -169,6 +169,10 @@ const SettingsPage = () => {
           </>
         )}
 
+        <TabsContent value="profile">
+          <ProfileSettings />
+        </TabsContent>
+
         <TabsContent value="integrations">
           <EmailIntegrations />
         </TabsContent>
