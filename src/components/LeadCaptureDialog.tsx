@@ -134,7 +134,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone("");
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
-    setVoiceNoteUrl(""); setTranscription("");
+    setDuplicateInfo(null);
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
     setMeetingType("call"); setBookFollowUp(false);
   };
