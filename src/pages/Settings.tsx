@@ -14,7 +14,7 @@ import type { AppRole } from "@/hooks/useAuth";
 import { useMemo } from "react";
 
 const SettingsPage = () => {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isSuperAdmin, user } = useAuth();
   const { data: profiles = [] } = useProfiles();
   const { data: roles = [] } = useUserRoles();
   const { data: submissions = [] } = useContactSubmissions();
