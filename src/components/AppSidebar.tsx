@@ -44,6 +44,7 @@ const roleLabels: Record<string, string> = {
   admin: "Admin",
   manager: "Manager",
   sales_rep: "Sales Rep",
+  super_admin: "Super Admin",
 };
 
 export function AppSidebar() {
