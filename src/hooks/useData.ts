@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
