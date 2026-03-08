@@ -74,9 +74,18 @@ export function InviteTeamDialog() {
     }
   };
 
-  const handleResend = async (id: string) => {
+  const handleResend = async (id: string, invEmail: string) => {
     try {
       await resendInvitation.mutateAsync(id);
+      const link = `${window.location.origin}/auth?invite=${orgId}`;
+
+      // Re-send email too
+      supabase.functions.invoke("send-invite-email", {
+        body: { email: invEmail, org_name: org?.name || "your team", invite_url: link },
+      }).then(({ error }) => {
+        if (error) console.error("Failed to resend invite email:", error);
+      });
+
       toast.success("Invitation resent — link is active again for 7 days");
     } catch {
       toast.error("Failed to resend invitation");
