@@ -7,9 +7,13 @@ type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type LeadUpdate = Database["public"]["Tables"]["leads"]["Update"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
+type EventInsert = Database["public"]["Tables"]["events"]["Insert"];
+type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type FollowUpBookingInsert = Database["public"]["Tables"]["follow_up_bookings"]["Insert"];
 type FollowUpBookingRow = Database["public"]["Tables"]["follow_up_bookings"]["Row"];
+type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
+type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
 
 export function useLeads() {
   return useQuery({
@@ -50,6 +54,54 @@ export function useProfiles() {
   });
 }
 
+export function useUserRoles() {
+  const { isAdmin } = useAuth();
+  return useQuery({
+    queryKey: ["user_roles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("*");
+      if (error) throw error;
+      return data as UserRoleRow[];
+    },
+    enabled: isAdmin,
+  });
+}
+
+export function useUpdateUserRole() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, role }: { id: string; role: string }) => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .update({ role: role as Database["public"]["Enums"]["app_role"] })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user_roles"] });
+    },
+  });
+}
+
+export function useContactSubmissions() {
+  const { isAdmin } = useAuth();
+  return useQuery({
+    queryKey: ["contact_submissions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contact_submissions")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as ContactSubmissionRow[];
+    },
+    enabled: isAdmin,
+  });
+}
+
 export function useCreateLead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -76,6 +128,19 @@ export function useUpdateLead() {
         .single();
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+    },
+  });
+}
+
+export function useDeleteLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leads").delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["leads"] });
@@ -124,17 +189,49 @@ export function useUpcomingFollowUps() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000, // refresh every minute
+    refetchInterval: 60000,
   });
 }
 
 export function useCreateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (event: Database["public"]["Tables"]["events"]["Insert"]) => {
+    mutationFn: async (event: EventInsert) => {
       const { data, error } = await supabase.from("events").insert(event).select().single();
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+}
+
+export function useUpdateEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: EventUpdate & { id: string }) => {
+      const { data, error } = await supabase
+        .from("events")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+}
+
+export function useDeleteEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("events").delete().eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["events"] });
