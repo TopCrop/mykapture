@@ -1,12 +1,13 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole } from "@/hooks/useData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
+import { ProfileSettings } from "@/components/ProfileSettings";
 import type { AppRole } from "@/hooks/useAuth";
 
 const SettingsPage = () => {
@@ -36,7 +37,7 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout title="Settings" subtitle="System configuration">
-      <Tabs defaultValue={isAdmin ? "team" : "integrations"} className="space-y-4">
+      <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
           {isAdmin && (
             <>
@@ -45,6 +46,7 @@ const SettingsPage = () => {
               <TabsTrigger value="config" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Configuration</TabsTrigger>
             </>
           )}
+          <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="h-3.5 w-3.5" /> Profile</TabsTrigger>
           <TabsTrigger value="integrations" className="gap-1.5 text-xs"><Plug className="h-3.5 w-3.5" /> Email Integrations</TabsTrigger>
         </TabsList>
 
@@ -166,6 +168,10 @@ const SettingsPage = () => {
             </TabsContent>
           </>
         )}
+
+        <TabsContent value="profile">
+          <ProfileSettings />
+        </TabsContent>
 
         <TabsContent value="integrations">
           <EmailIntegrations />
