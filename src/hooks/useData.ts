@@ -155,9 +155,10 @@ export function useContactSubmissions() {
 
 export function useCreateLead() {
   const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
-      const { data, error } = await supabase.from("leads").insert(lead).select().single();
+      const { data, error } = await supabase.from("leads").insert({ ...lead, org_id: orgId } as any).select().single();
       if (error) throw error;
       return data;
     },
