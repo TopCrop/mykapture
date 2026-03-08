@@ -130,6 +130,15 @@ const LeadsPage = () => {
     return map;
   }, [events]);
 
+  // Build unique reps list for filter
+  const uniqueReps = useMemo(() => {
+    const repIds = [...new Set(leads.map((l) => l.captured_by))];
+    return repIds.map((id) => {
+      const profile = profiles.find((p) => p.user_id === id);
+      return { id, name: profile?.display_name || "Unknown" };
+    });
+  }, [leads, profiles]);
+
   useEffect(() => {
     const classification = searchParams.get("classification");
     if (classification) setClassFilter(classification);
