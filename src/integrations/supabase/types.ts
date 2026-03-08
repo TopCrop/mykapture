@@ -47,6 +47,62 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_up_bookings: {
+        Row: {
+          booked_by: string
+          calendar_provider: string | null
+          created_at: string
+          duration_minutes: number
+          external_event_id: string | null
+          external_event_url: string | null
+          follow_up_date: string
+          id: string
+          lead_id: string
+          meeting_type: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booked_by: string
+          calendar_provider?: string | null
+          created_at?: string
+          duration_minutes?: number
+          external_event_id?: string | null
+          external_event_url?: string | null
+          follow_up_date: string
+          id?: string
+          lead_id: string
+          meeting_type?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booked_by?: string
+          calendar_provider?: string | null
+          created_at?: string
+          duration_minutes?: number
+          external_event_id?: string | null
+          external_event_url?: string | null
+          follow_up_date?: string
+          id?: string
+          lead_id?: string
+          meeting_type?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_bookings_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           bant_authority: string | null
@@ -60,6 +116,8 @@ export type Database = {
           created_at: string
           email: string | null
           event_id: string | null
+          follow_up_email_sent: boolean | null
+          follow_up_email_sent_at: string | null
           id: string
           name: string
           notes: string | null
@@ -85,6 +143,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           event_id?: string | null
+          follow_up_email_sent?: boolean | null
+          follow_up_email_sent_at?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -110,6 +170,8 @@ export type Database = {
           created_at?: string
           email?: string | null
           event_id?: string | null
+          follow_up_email_sent?: boolean | null
+          follow_up_email_sent_at?: string | null
           id?: string
           name?: string
           notes?: string | null
