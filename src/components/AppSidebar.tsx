@@ -8,6 +8,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useMyProfile } from "@/hooks/useData";
+import { useOrg } from "@/hooks/useOrg";
 import { NavLink } from "@/components/NavLink";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation, useNavigate } from "react-router-dom";
