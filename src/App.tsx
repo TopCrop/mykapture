@@ -19,6 +19,7 @@ import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import BrandGuidelines from "./pages/BrandGuidelines";
 import OrgSetupPage from "./pages/OrgSetup";
+import SuperAdminPage from "./pages/SuperAdmin";
 import { useEffect } from "react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
