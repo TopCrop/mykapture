@@ -1,1 +1,7 @@
 project_id = "wsqvdyfruikthtaeqliy"
+
+[functions.scan-business-card]
+verify_jwt = false
+
+[functions.transcribe-voice]
+verify_jwt = false
