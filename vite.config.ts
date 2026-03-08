@@ -22,8 +22,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/~oauth/],
       },
       manifest: {
-        name: "LeadCapture — Conference Edition",
-        short_name: "LeadCapture",
+        name: "Kapture — Conference Edition",
+        short_name: "Kapture",
         description: "Secure conference lead capture and qualification",
         theme_color: "#1e293b",
         background_color: "#0f172a",

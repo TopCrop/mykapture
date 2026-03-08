@@ -65,7 +65,7 @@ const DocumentationPage = () => {
           <Section title="Product Architecture" icon={Network}>
             <InfoCard title="System Overview">
               <p className="text-sm text-muted-foreground">
-                LeadCapture is a single-page React application with a serverless backend. 
+                Kapture is a single-page React application with a serverless backend. 
                 The frontend is built with React 18, Vite, TypeScript, and Tailwind CSS. 
                 Backend services are powered by Lovable Cloud (PostgreSQL database, edge functions, file storage, and authentication).
               </p>
@@ -487,14 +487,14 @@ const DocumentationPage = () => {
         {/* ─── 6. CRM MAPPING ─── */}
         <TabsContent value="crm">
           <Section title="CRM Mapping Documentation" icon={Link2}>
-            <InfoCard title="Field Mapping: LeadCapture → CRM">
+            <InfoCard title="Field Mapping: Kapture → CRM">
               <p className="text-xs text-muted-foreground mb-3">
                 The following mapping supports HubSpot, Salesforce, and Pipedrive. 
                 CRM sync will be triggered via the <code>sync_status</code> field on each lead.
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead><TableRow header cells={["LeadCapture Field", "HubSpot", "Salesforce", "Pipedrive"]} /></thead>
+                  <thead><TableRow header cells={["Kapture Field", "HubSpot", "Salesforce", "Pipedrive"]} /></thead>
                   <tbody>
                     <TableRow cells={["name", "firstname + lastname", "FirstName + LastName", "name"]} />
                     <TableRow cells={["title", "jobtitle", "Title", "job_title (custom)"]} />
@@ -521,7 +521,7 @@ const DocumentationPage = () => {
               <InfoCard title="Classification → CRM Status Mapping">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
-                    <thead><TableRow header cells={["LeadCapture", "HubSpot", "Salesforce"]} /></thead>
+                    <thead><TableRow header cells={["Kapture", "HubSpot", "Salesforce"]} /></thead>
                     <tbody>
                       <TableRow cells={["hot", "Sales Qualified Lead", "Hot"]} />
                       <TableRow cells={["warm", "Marketing Qualified Lead", "Warm"]} />
