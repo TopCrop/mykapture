@@ -494,7 +494,7 @@ const DocumentationPage = () => {
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead><TableRow header cells={["LeadCapture Field", "HubSpot", "Salesforce", "Pipedrive"]} /></thead>
+                  <thead><TableRow header cells={["Kapture Field", "HubSpot", "Salesforce", "Pipedrive"]} /></thead>
                   <tbody>
                     <TableRow cells={["name", "firstname + lastname", "FirstName + LastName", "name"]} />
                     <TableRow cells={["title", "jobtitle", "Title", "job_title (custom)"]} />
