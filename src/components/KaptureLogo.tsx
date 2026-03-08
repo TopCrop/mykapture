@@ -8,60 +8,70 @@ interface KaptureLogoProps {
 
 export function KaptureLogo({ size = "md", showSubtitle = false, className }: KaptureLogoProps) {
   const sizes = {
-    sm: { height: 28, fontSize: 15, subtitleSize: 8, iconSize: 18 },
-    md: { height: 40, fontSize: 22, subtitleSize: 10, iconSize: 26 },
-    lg: { height: 56, fontSize: 32, subtitleSize: 13, iconSize: 36 },
+    sm: { height: 30, gap: 6, subtitleSize: 8 },
+    md: { height: 44, gap: 8, subtitleSize: 10 },
+    lg: { height: 60, gap: 10, subtitleSize: 12 },
   };
 
   const s = sizes[size];
 
   return (
     <div className={cn("flex flex-col", className)}>
-      <div className="flex items-center" style={{ height: s.height }}>
+      <div className="flex items-center" style={{ height: s.height, gap: s.gap }}>
+        {/* Icon mark — abstract K + capture reticle */}
         <svg
-          viewBox="0 0 180 40"
+          viewBox="0 0 40 40"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          style={{ height: s.height }}
+          style={{ height: s.height, width: s.height }}
+          className="block shrink-0"
+        >
+          <defs>
+            <linearGradient id="kapture-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="hsl(168, 80%, 55%)" />
+              <stop offset="100%" stopColor="hsl(168, 80%, 38%)" />
+            </linearGradient>
+          </defs>
+          
+          {/* Rounded square container */}
+          <rect x="1" y="1" width="38" height="38" rx="10" fill="url(#kapture-grad)" />
+          
+          {/* K letterform — bold, geometric, white */}
+          <path
+            d="M11 10 L11 30 L15.5 30 L15.5 22.5 L17 21 L23.5 30 L29 30 L20 18.5 L28 10 L22.8 10 L15.5 18 L15.5 10 Z"
+            fill="white"
+          />
+          
+          {/* Reticle dot — bottom right, subtle capture reference */}
+          <circle cx="30.5" cy="30.5" r="2.5" fill="white" opacity="0.9" />
+          <circle cx="30.5" cy="30.5" r="4.5" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
+
+        {/* Wordmark */}
+        <svg
+          viewBox="0 0 130 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ height: s.height * 0.55 }}
           className="block"
         >
-          {/* K with integrated crosshair/viewfinder */}
-          <g>
-            {/* K vertical stroke */}
-            <rect x="2" y="4" width="5" height="32" rx="1" fill="hsl(168, 80%, 48%)" />
-            {/* K upper diagonal */}
-            <path d="M7 20 L24 4 L28.5 4 L11.5 20" fill="hsl(168, 80%, 48%)" />
-            {/* K lower diagonal */}
-            <path d="M7 20 L11.5 20 L28.5 36 L24 36" fill="hsl(168, 80%, 48%)" />
-            
-            {/* Crosshair/viewfinder element integrated at the K's junction */}
-            <circle cx="22" cy="20" r="7" stroke="hsl(168, 80%, 48%)" strokeWidth="2" fill="none" />
-            <circle cx="22" cy="20" r="2.5" fill="hsl(168, 80%, 48%)" />
-            {/* Crosshair lines */}
-            <line x1="22" y1="11" x2="22" y2="15" stroke="hsl(168, 80%, 48%)" strokeWidth="1.5" />
-            <line x1="22" y1="25" x2="22" y2="29" stroke="hsl(168, 80%, 48%)" strokeWidth="1.5" />
-            <line x1="13" y1="20" x2="17" y2="20" stroke="hsl(168, 80%, 48%)" strokeWidth="1.5" />
-            <line x1="27" y1="20" x2="31" y2="20" stroke="hsl(168, 80%, 48%)" strokeWidth="1.5" />
-          </g>
-
-          {/* "apture" text */}
           <text
-            x="36"
-            y="30"
+            x="0"
+            y="24"
             fill="currentColor"
             fontFamily="'Space Grotesk', sans-serif"
-            fontWeight="600"
-            fontSize="26"
-            letterSpacing="-0.5"
+            fontWeight="700"
+            fontSize="28"
+            letterSpacing="-1"
           >
-            apture
+            Kapture
           </text>
         </svg>
       </div>
       {showSubtitle && (
         <span
-          className="text-muted-foreground tracking-[0.2em] uppercase ml-1"
-          style={{ fontSize: s.subtitleSize }}
+          className="text-muted-foreground tracking-[0.25em] uppercase font-medium"
+          style={{ fontSize: s.subtitleSize, marginLeft: s.height + s.gap }}
         >
           Conference Edition
         </span>
