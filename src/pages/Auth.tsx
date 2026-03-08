@@ -111,7 +111,7 @@ const AuthPage = () => {
             <Zap className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">LeadCapture</h1>
+            <h1 className="text-xl font-bold tracking-tight">Kapture</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {view === "login" && "Sign in to your account"}
               {view === "signup" && "Create your account"}
