@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Copy, Check, Loader2, X, Clock } from "lucide-react";
-import { useCreateInvitation, useInvitations, useDeleteInvitation } from "@/hooks/useData";
+import { UserPlus, Copy, Check, Loader2, X, Clock, RefreshCw, AlertTriangle } from "lucide-react";
+import { useCreateInvitation, useInvitations, useDeleteInvitation, useResendInvitation } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
 import { toast } from "sonner";
+
+function isExpired(expiresAt: string): boolean {
+  return new Date(expiresAt) < new Date();
+}
 
 export function InviteTeamDialog() {
   const [open, setOpen] = useState(false);
@@ -18,8 +22,12 @@ export function InviteTeamDialog() {
   const createInvitation = useCreateInvitation();
   const { data: invitations = [] } = useInvitations();
   const deleteInvitation = useDeleteInvitation();
+  const resendInvitation = useResendInvitation();
 
-  const pendingInvitations = invitations.filter((i) => i.status === "pending");
+  // Split into pending (active) and expired; exclude accepted
+  const activeInvitations = invitations.filter((i) => i.status === "pending" && !isExpired(i.expires_at));
+  const expiredInvitations = invitations.filter((i) => i.status === "pending" && isExpired(i.expires_at));
+  const allVisible = [...activeInvitations, ...expiredInvitations];
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +62,15 @@ export function InviteTeamDialog() {
       toast.success("Invitation cancelled");
     } catch {
       toast.error("Failed to cancel invitation");
+    }
+  };
+
+  const handleResend = async (id: string) => {
+    try {
+      await resendInvitation.mutateAsync(id);
+      toast.success("Invitation resent — link is active again for 7 days");
+    } catch {
+      toast.error("Failed to resend invitation");
     }
   };
 
@@ -100,13 +117,13 @@ export function InviteTeamDialog() {
           </div>
         )}
 
-        {pendingInvitations.length > 0 && (
+        {allVisible.length > 0 && (
           <div className="space-y-2 pt-3 border-t border-border">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Pending Invitations ({pendingInvitations.length})
+              Invitations ({allVisible.length})
             </h4>
-            <div className="space-y-1.5 max-h-40 overflow-y-auto">
-              {pendingInvitations.map((inv) => (
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {activeInvitations.map((inv) => (
                 <div key={inv.id} className="flex items-center justify-between rounded-md bg-secondary/30 px-3 py-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
@@ -121,6 +138,35 @@ export function InviteTeamDialog() {
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
+                </div>
+              ))}
+              {expiredInvitations.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between rounded-md bg-destructive/10 px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
+                    <span className="text-xs truncate text-muted-foreground">{inv.email}</span>
+                    <Badge variant="destructive" className="text-[10px] shrink-0">Expired</Badge>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleResend(inv.id)}
+                      disabled={resendInvitation.isPending}
+                      title="Resend invitation"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => handleCancel(inv.id)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

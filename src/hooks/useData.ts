@@ -365,6 +365,26 @@ export function useDeleteInvitation() {
   });
 }
 
+export function useResendInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const newExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("invitations")
+        .update({ status: "pending", expires_at: newExpiry })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
+    },
+  });
+}
+
 // Lead scoring logic
 export function calculateLeadScore(lead: {
   title?: string | null;
