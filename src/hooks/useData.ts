@@ -15,17 +15,21 @@ type FollowUpBookingRow = Database["public"]["Tables"]["follow_up_bookings"]["Ro
 type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
 
+// Shared cache config: avoid re-fetching within 2 minutes, keep stale data for 10 min
+const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000, gcTime: 10 * 60 * 1000 } as const;
+
 export function useLeads() {
   return useQuery({
     queryKey: ["leads"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("*")
+        .select("id,name,title,company,email,phone,classification,score,sync_status,event_id,captured_by,created_at,updated_at,notes,bant_budget,bant_authority,bant_timeline,bant_employees,bant_need,follow_up_email_sent,follow_up_email_sent_at,voice_note_url,transcription,website")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as LeadRow[];
     },
+    ...CACHE_DEFAULTS,
   });
 }
 
@@ -35,11 +39,12 @@ export function useEvents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("*")
+        .select("id,name,date,location,status,created_by,created_at,updated_at")
         .order("date", { ascending: false });
       if (error) throw error;
       return data as EventRow[];
     },
+    ...CACHE_DEFAULTS,
   });
 }
 
@@ -47,10 +52,13 @@ export function useProfiles() {
   return useQuery({
     queryKey: ["profiles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("profiles").select("*");
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id,user_id,display_name,avatar_url,phone,team,territory,created_at,updated_at");
       if (error) throw error;
       return data as ProfileRow[];
     },
+    ...CACHE_DEFAULTS,
   });
 }
 
@@ -62,13 +70,15 @@ export function useMyProfile() {
       if (!user) return null;
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id,user_id,display_name,avatar_url,phone,team,territory,created_at,updated_at")
         .eq("user_id", user.id)
         .single();
       if (error) throw error;
       return data as ProfileRow;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Profile rarely changes
+    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -96,11 +106,13 @@ export function useUserRoles() {
   return useQuery({
     queryKey: ["user_roles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_roles").select("*");
+      const { data, error } = await supabase.from("user_roles").select("id,user_id,role");
       if (error) throw error;
       return data as UserRoleRow[];
     },
     enabled: isAdmin,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -130,12 +142,13 @@ export function useContactSubmissions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("contact_submissions")
-        .select("*")
+        .select("id,name,email,mobile,reason,created_at")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as ContactSubmissionRow[];
     },
     enabled: isAdmin,
+    ...CACHE_DEFAULTS,
   });
 }
 
@@ -209,6 +222,7 @@ export function useFollowUpBookings(leadId?: string) {
       if (error) throw error;
       return data as FollowUpBookingRow[];
     },
+    ...CACHE_DEFAULTS,
   });
 }
 
@@ -218,7 +232,7 @@ export function useUpcomingFollowUps() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("follow_up_bookings")
-        .select("*, leads(name, company)")
+        .select("id,follow_up_date,meeting_type,duration_minutes,status,lead_id,leads(name,company)")
         .eq("status", "scheduled")
         .gte("follow_up_date", new Date().toISOString())
         .order("follow_up_date", { ascending: true })
@@ -226,7 +240,9 @@ export function useUpcomingFollowUps() {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000,
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchInterval: 5 * 60 * 1000, // 5 min instead of 1 min
   });
 }
 

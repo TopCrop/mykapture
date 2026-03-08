@@ -29,16 +29,17 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
+        max_tokens: 500,
         messages: [
           {
             role: "system",
-            content: "You are a voice note transcription assistant for sales reps at trade shows. Transcribe the audio accurately. Then extract any key information mentioned (names, companies, needs, timelines). You MUST respond by calling the transcribe_audio tool.",
+            content: "Transcribe the audio and extract lead info (names, companies, needs, timelines). Call the transcribe_audio tool.",
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Transcribe this voice note and extract any lead information mentioned." },
+              { type: "text", text: "Transcribe this voice note and extract lead information." },
               {
                 type: "input_audio",
                 input_audio: {
@@ -63,7 +64,7 @@ serve(async (req) => {
                   extracted_company: { type: "string", description: "Company mentioned, if any" },
                   extracted_needs: { type: "string", description: "Needs or pain points mentioned, if any" },
                   extracted_timeline: { type: "string", description: "Timeline or urgency mentioned, if any" },
-                  summary: { type: "string", description: "Brief 1-2 sentence summary of the conversation" },
+                  summary: { type: "string", description: "Brief 1-2 sentence summary" },
                 },
                 required: ["transcription"],
                 additionalProperties: false,
