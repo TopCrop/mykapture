@@ -1,8 +1,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents, useProfiles, useContactSubmissions } from "@/hooks/useData";
-import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus, Mail, UserCheck, Search, Filter, X } from "lucide-react";
+import { useLeads, useEvents, useProfiles, useContactSubmissions, useFollowUpBookings } from "@/hooks/useData";
+import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus, Mail, UserCheck, Search, Filter, X, Rocket, CalendarPlus, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -14,14 +14,169 @@ import { useState, useMemo } from "react";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { useAuth } from "@/hooks/useAuth";
 import type { LeadClassification } from "@/types/lead";
+import type { Database } from "@/integrations/supabase/types";
+
+// Import LeadDetailDialog from Leads page - we'll extract it as a shared component
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useUpdateLead } from "@/hooks/useData";
+import { Pencil, Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import type { SyncStatus } from "@/types/lead";
+
+type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+
+function DashboardLeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | null; open: boolean; onClose: () => void; events: Database["public"]["Tables"]["events"]["Row"][] }) {
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<LeadRow>>({});
+  const updateLead = useUpdateLead();
+
+  if (!lead) return null;
+  const event = events.find((e) => e.id === lead.event_id);
+
+  const bantLabels: Record<string, Record<string, string>> = {
+    budget: { confirmed: "Confirmed", exploring: "Exploring", no_budget: "No Budget" },
+    authority: { decision_maker: "Decision Maker", influencer: "Influencer", researcher: "Researcher" },
+    timeline: { immediate: "Immediate", "3_months": "3 Months", "6_months": "6 Months", "1_year_plus": "1 Year+" },
+  };
+
+  const startEditing = () => {
+    setEditData({
+      name: lead.name, title: lead.title, company: lead.company, email: lead.email,
+      phone: lead.phone, notes: lead.notes, bant_budget: lead.bant_budget,
+      bant_authority: lead.bant_authority, bant_timeline: lead.bant_timeline, bant_employees: lead.bant_employees,
+    });
+    setEditing(true);
+  };
+
+  const saveEdits = async () => {
+    try {
+      await updateLead.mutateAsync({ id: lead.id, ...editData });
+      toast.success("Lead updated!");
+      setEditing(false);
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { setEditing(false); onClose(); } }}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-3">
+            {editing ? "Edit Lead" : lead.name}
+            {!editing && <ClassificationBadge classification={lead.classification as LeadClassification} />}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 text-sm">
+          {editing ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs">Name</Label>
+                  <Input value={editData.name || ""} onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Title</Label>
+                  <Input value={editData.title || ""} onChange={(e) => setEditData((d) => ({ ...d, title: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Company</Label>
+                  <Input value={editData.company || ""} onChange={(e) => setEditData((d) => ({ ...d, company: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={editData.email || ""} onChange={(e) => setEditData((d) => ({ ...d, email: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Phone</Label>
+                  <Input value={editData.phone || ""} onChange={(e) => setEditData((d) => ({ ...d, phone: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Notes</Label>
+                <Textarea value={editData.notes || ""} onChange={(e) => setEditData((d) => ({ ...d, notes: e.target.value }))} rows={3} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setEditing(false)}>
+                  <X className="h-3.5 w-3.5" /> Cancel
+                </Button>
+                <Button className="flex-1 gap-1.5" onClick={saveEdits} disabled={updateLead.isPending}>
+                  {updateLead.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Title</span><p className="font-medium mt-0.5">{lead.title || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Company</span><p className="font-medium mt-0.5">{lead.company || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Email</span><p className="font-medium mt-0.5">{lead.email || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Phone</span><p className="font-medium mt-0.5">{lead.phone || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Event</span><p className="font-medium mt-0.5">{event?.name || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Captured</span><p className="font-medium mt-0.5">{new Date(lead.created_at).toLocaleDateString()}</p></div>
+              </div>
+
+              <div className="brand-line" />
+
+              <div>
+                <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">BANT Qualification</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="text-muted-foreground text-[11px]">Budget</span><p className="font-medium mt-0.5">{lead.bant_budget ? bantLabels.budget[lead.bant_budget] : "—"}</p></div>
+                  <div><span className="text-muted-foreground text-[11px]">Authority</span><p className="font-medium mt-0.5">{lead.bant_authority ? bantLabels.authority[lead.bant_authority] : "—"}</p></div>
+                  <div><span className="text-muted-foreground text-[11px]">Timeline</span><p className="font-medium mt-0.5">{lead.bant_timeline ? bantLabels.timeline[lead.bant_timeline] : "—"}</p></div>
+                  <div><span className="text-muted-foreground text-[11px]">Employees</span><p className="font-medium mt-0.5">{lead.bant_employees || "—"}</p></div>
+                </div>
+                {lead.bant_need && lead.bant_need.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-muted-foreground text-[11px]">Needs</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {lead.bant_need.map((n) => <Badge key={n} variant="secondary" className="text-[10px]">{n}</Badge>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {lead.notes && (
+                <>
+                  <div className="brand-line" />
+                  <div>
+                    <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.notes}</p>
+                  </div>
+                </>
+              )}
+
+              <div className="brand-line" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ScoreBadge score={lead.score} />
+                  <SyncBadge status={lead.sync_status as SyncStatus} />
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={startEditing}>
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const Index = () => {
   const { data: leads = [], isLoading: leadsLoading } = useLeads();
   const { data: events = [] } = useEvents();
   const { data: profiles = [] } = useProfiles();
   const { data: submissions = [] } = useContactSubmissions();
-  const { user, isSalesRep, isAdmin } = useAuth();
+  const { data: followUpBookings = [] } = useFollowUpBookings();
+  const { user, isSalesRep, isAdmin, isManager } = useAuth();
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
@@ -67,7 +222,6 @@ const Index = () => {
   // Filtered leads
   const filteredLeads = useMemo(() => {
     return displayLeads.filter((lead) => {
-      // Search
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const eventName = lead.event_id ? eventMap.get(lead.event_id)?.name?.toLowerCase() || "" : "";
@@ -79,20 +233,16 @@ const Index = () => {
           eventName.includes(q);
         if (!matches) return false;
       }
-      // Month filter
       if (filterMonth !== "all") {
         const d = new Date(lead.created_at);
         const m = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
         if (m !== filterMonth) return false;
       }
-      // Event filter
       if (filterEvent !== "all" && lead.event_id !== filterEvent) return false;
-      // Location filter
       if (filterLocation !== "all") {
         const eventLoc = lead.event_id ? eventMap.get(lead.event_id)?.location : null;
         if (eventLoc !== filterLocation) return false;
       }
-      // Classification filter
       if (filterClassification !== "all" && lead.classification !== filterClassification) return false;
       return true;
     });
@@ -113,6 +263,17 @@ const Index = () => {
   const activeEvents = events.filter((e) => e.status === "active").length;
   const followUpsSent = displayLeads.filter((l) => l.follow_up_email_sent).length;
 
+  // Manager-specific KPIs
+  const managerKPIs = useMemo(() => {
+    if (!isManager) return null;
+    const teamLeads = leads; // managers see all leads
+    const hotPercent = teamLeads.length > 0 ? Math.round((teamLeads.filter(l => l.classification === "hot").length / teamLeads.length) * 100) : 0;
+    const completedFollowUps = followUpBookings.filter(b => b.status === "completed").length;
+    const totalFollowUps = followUpBookings.length;
+    const followUpRate = totalFollowUps > 0 ? Math.round((completedFollowUps / totalFollowUps) * 100) : 0;
+    return { teamLeadCount: teamLeads.length, hotPercent, followUpRate, totalFollowUps };
+  }, [isManager, leads, followUpBookings]);
+
   const classificationData = [
     { name: "Hot", value: displayLeads.filter((l) => l.classification === "hot").length, color: "hsl(0, 72%, 56%)" },
     { name: "Warm", value: displayLeads.filter((l) => l.classification === "warm").length, color: "hsl(38, 92%, 50%)" },
@@ -131,6 +292,9 @@ const Index = () => {
     return Array.from(map.values()).map((r) => ({ name: r.name, leads: r.count }));
   }, [leads, profiles]);
 
+  // Empty state check
+  const isEmpty = displayLeads.length === 0 && events.length === 0;
+
   return (
     <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"}>
       <div className="space-y-6">
@@ -148,6 +312,52 @@ const Index = () => {
           </Button>
         </div>
 
+        {/* Empty/Onboarding State */}
+        {isEmpty && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card rounded-xl p-8 space-y-6">
+            <div className="text-center space-y-2">
+              <div className="flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 border border-primary/20">
+                  <Rocket className="h-7 w-7 text-primary" />
+                </div>
+              </div>
+              <h3 className="text-lg font-semibold">Get started with Kapture</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">Set up your lead capture workflow in three simple steps.</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+              <Link to="/events" className="glass-card rounded-xl p-4 text-center space-y-2 hover:border-primary/30 hover:scale-[1.02] transition-all group cursor-pointer">
+                <div className="flex justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                    <CalendarPlus className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+                <p className="text-xs font-semibold">Create an Event</p>
+                <p className="text-[10px] text-muted-foreground">Set up your first conference or meetup</p>
+              </Link>
+              <button onClick={() => setCaptureOpen(true)} className="glass-card rounded-xl p-4 text-center space-y-2 hover:border-primary/30 hover:scale-[1.02] transition-all group cursor-pointer text-left">
+                <div className="flex justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+                <p className="text-xs font-semibold text-center">Capture a Lead</p>
+                <p className="text-[10px] text-muted-foreground text-center">Add your first contact</p>
+              </button>
+              {(isAdmin || isManager) && (
+                <Link to="/settings?tab=team" className="glass-card rounded-xl p-4 text-center space-y-2 hover:border-primary/30 hover:scale-[1.02] transition-all group cursor-pointer">
+                  <div className="flex justify-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                      <UserPlus className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                  <p className="text-xs font-semibold">Invite Your Team</p>
+                  <p className="text-[10px] text-muted-foreground">Add sales reps to your workspace</p>
+                </Link>
+              )}
+            </div>
+          </motion.div>
+        )}
+
         {/* Stats grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title={isSalesRep ? "My Leads" : "Total Leads"} value={displayLeads.length} change={displayLeads.length > 0 ? `${displayLeads.length} captured` : "No leads yet"} changeType="neutral" icon={Users} delay={0} href="/leads" />
@@ -162,6 +372,15 @@ const Index = () => {
             <StatCard title="Team Members" value={profiles.length} change="Active users" changeType="neutral" icon={UserCheck} delay={0.2} href="/settings?tab=team" />
             <StatCard title="Follow-ups Sent" value={followUpsSent} change={displayLeads.length > 0 ? `${Math.round((followUpsSent / displayLeads.length) * 100)}% rate` : "—"} changeType="positive" icon={Mail} delay={0.25} href="/leads?followup=sent" />
             <StatCard title="Contact Submissions" value={submissions.length} change="From landing page" changeType="neutral" icon={Mail} delay={0.3} href="/settings?tab=submissions" />
+          </div>
+        )}
+
+        {/* Manager KPIs */}
+        {isManager && !isAdmin && managerKPIs && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard title="Team Leads" value={managerKPIs.teamLeadCount} change="All team leads" changeType="neutral" icon={Users} delay={0.2} href="/leads" />
+            <StatCard title="Hot Lead %" value={`${managerKPIs.hotPercent}%`} change="Of all captured leads" changeType={managerKPIs.hotPercent >= 20 ? "positive" : "neutral"} icon={Flame} iconColor="bg-hot/10 border-hot/20" delay={0.25} href="/leads?classification=hot" />
+            <StatCard title="Follow-up Rate" value={`${managerKPIs.followUpRate}%`} change={`${managerKPIs.totalFollowUps} total bookings`} changeType={managerKPIs.followUpRate >= 50 ? "positive" : "negative"} icon={Calendar} delay={0.3} href="/analytics" />
           </div>
         )}
 
@@ -309,7 +528,11 @@ const Index = () => {
                 </thead>
                 <tbody>
                   {filteredLeads.slice(0, 10).map((lead) => (
-                    <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                    <tr
+                      key={lead.id}
+                      className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
+                      onClick={() => setSelectedLead(lead)}
+                    >
                       <td className="px-5 py-3">
                         <p className="font-medium text-sm">{lead.name}</p>
                         <p className="text-[11px] text-muted-foreground">{lead.title}</p>
@@ -336,6 +559,7 @@ const Index = () => {
         </motion.div>
       </div>
 
+      <DashboardLeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} />
       <LeadCaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
     </DashboardLayout>
   );

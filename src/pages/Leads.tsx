@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents, useUpdateLead, useDeleteLead } from "@/hooks/useData";
+import { useLeads, useEvents, useUpdateLead, useDeleteLead, useCreateFollowUpBooking } from "@/hooks/useData";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X, Trash2, ChevronLeft, ChevronRight, CalendarPlus, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
+import { FilterContextBanner } from "@/components/FilterContextBanner";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -111,9 +112,91 @@ function FollowUpEmailButton({ lead }: { lead: LeadRow }) {
   );
 }
 
+function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
+  const { user } = useAuth();
+  const createBooking = useCreateFollowUpBooking();
+  const [followUpDate, setFollowUpDate] = useState("");
+  const [followUpTime, setFollowUpTime] = useState("10:00");
+  const [duration, setDuration] = useState("30");
+  const [meetingType, setMeetingType] = useState("call");
+  const [notes, setNotes] = useState("");
+
+  const handleSubmit = async () => {
+    if (!user || !followUpDate) return;
+    try {
+      await createBooking.mutateAsync({
+        lead_id: lead.id,
+        booked_by: user.id,
+        follow_up_date: `${followUpDate}T${followUpTime}:00`,
+        duration_minutes: parseInt(duration),
+        meeting_type: meetingType,
+        notes: notes || null,
+      });
+      toast.success("Follow-up scheduled!");
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  return (
+    <div className="space-y-3 pt-2 border-t border-border">
+      <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+        <CalendarPlus className="h-3 w-3" /> Schedule Follow-Up
+      </h4>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs">Date *</Label>
+          <Input type="date" value={followUpDate} onChange={(e) => setFollowUpDate(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Time</Label>
+          <Input type="time" value={followUpTime} onChange={(e) => setFollowUpTime(e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Duration</Label>
+          <Select value={duration} onValueChange={setDuration}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="15">15 min</SelectItem>
+              <SelectItem value="30">30 min</SelectItem>
+              <SelectItem value="45">45 min</SelectItem>
+              <SelectItem value="60">60 min</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs">Type</Label>
+          <Select value={meetingType} onValueChange={setMeetingType}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="call">Call</SelectItem>
+              <SelectItem value="video">Video</SelectItem>
+              <SelectItem value="in_person">In-Person</SelectItem>
+              <SelectItem value="email">Email</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Notes</Label>
+        <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes..." />
+      </div>
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" className="flex-1" onClick={onClose}>Cancel</Button>
+        <Button size="sm" className="flex-1 gap-1.5" onClick={handleSubmit} disabled={!followUpDate || createBooking.isPending}>
+          {createBooking.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CalendarPlus className="h-3 w-3" />}
+          Schedule
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | null; open: boolean; onClose: () => void; events: Database["public"]["Tables"]["events"]["Row"][] }) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<LeadRow>>({});
+  const [showFollowUp, setShowFollowUp] = useState(false);
   const updateLead = useUpdateLead();
 
   if (!lead) return null;
@@ -153,7 +236,7 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { setEditing(false); onClose(); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { setEditing(false); setShowFollowUp(false); onClose(); } }}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
@@ -296,10 +379,20 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
                   <ScoreBadge score={lead.score} />
                   <SyncBadge status={lead.sync_status as SyncStatus} />
                 </div>
-                <Button variant="outline" size="sm" className="gap-1.5" onClick={startEditing}>
-                  <Pencil className="h-3 w-3" /> Edit
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowFollowUp(!showFollowUp)}>
+                    <CalendarPlus className="h-3 w-3" /> Follow-Up
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={startEditing}>
+                    <Pencil className="h-3 w-3" /> Edit
+                  </Button>
+                </div>
               </div>
+
+              {/* Inline follow-up scheduling */}
+              {showFollowUp && (
+                <ScheduleFollowUpForm lead={lead} onClose={() => setShowFollowUp(false)} />
+              )}
             </>
           )}
         </div>
@@ -315,10 +408,12 @@ const LeadsPage = () => {
   const { data: events = [] } = useEvents();
   const { user, isSalesRep, isAdmin } = useAuth();
   const deleteLead = useDeleteLead();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [followupFilter, setFollowupFilter] = useState<string>("all");
+  const [eventFilter, setEventFilter] = useState<string>("all");
+  const [repFilter, setRepFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -329,7 +424,24 @@ const LeadsPage = () => {
     if (classification) setClassFilter(classification);
     const followup = searchParams.get("followup");
     if (followup) setFollowupFilter(followup);
-  }, [searchParams]);
+    const eventId = searchParams.get("event");
+    if (eventId) setEventFilter(eventId);
+    const rep = searchParams.get("rep");
+    if (rep) setRepFilter(rep);
+    const leadId = searchParams.get("leadId");
+    if (leadId && leads.length > 0) {
+      const lead = leads.find(l => l.id === leadId);
+      if (lead) setSelectedLead(lead);
+    }
+  }, [searchParams, leads]);
+
+  const clearUrlFilters = () => {
+    setClassFilter("all");
+    setFollowupFilter("all");
+    setEventFilter("all");
+    setRepFilter("all");
+    setSearchParams({});
+  };
 
   // Sales reps only see their own leads
   const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
@@ -338,7 +450,9 @@ const LeadsPage = () => {
     const matchesSearch = !search || lead.name.toLowerCase().includes(search.toLowerCase()) || (lead.company || "").toLowerCase().includes(search.toLowerCase());
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
     const matchesFollowup = followupFilter === "all" || (followupFilter === "sent" && lead.follow_up_email_sent);
-    return matchesSearch && matchesClass && matchesFollowup;
+    const matchesEvent = eventFilter === "all" || lead.event_id === eventFilter;
+    const matchesRep = repFilter === "all" || lead.captured_by === repFilter;
+    return matchesSearch && matchesClass && matchesFollowup && matchesEvent && matchesRep;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / LEADS_PER_PAGE));
@@ -385,6 +499,12 @@ const LeadsPage = () => {
   return (
     <DashboardLayout title="Leads" subtitle={`${filtered.length} ${isSalesRep ? "my " : ""}leads captured${totalPages > 1 ? ` · Page ${safeCurrentPage}/${totalPages}` : ""}`}>
       <div className="space-y-4">
+        {/* Filter context banner */}
+        <FilterContextBanner
+          labels={{ classification: "Classification", followup: "Follow-up", event: "Event", rep: "Rep" }}
+          onClear={clearUrlFilters}
+        />
+
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

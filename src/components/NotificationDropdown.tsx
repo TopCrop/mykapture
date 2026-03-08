@@ -3,13 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useUpcomingFollowUps } from "@/hooks/useData";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export function NotificationDropdown() {
   const { data: followUps = [] } = useUpcomingFollowUps();
   const count = followUps.length;
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  const handleItemClick = (leadId: string) => {
+    setOpen(false);
+    navigate(`/leads?leadId=${leadId}`);
+  };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative hover:bg-secondary">
           <Bell className="h-4 w-4" />
@@ -31,7 +40,11 @@ export function NotificationDropdown() {
             </div>
           ) : (
             followUps.map((fu: any) => (
-              <div key={fu.id} className="px-3 py-2.5 border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+              <button
+                key={fu.id}
+                onClick={() => handleItemClick(fu.lead_id)}
+                className="w-full text-left px-3 py-2.5 border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
+              >
                 <div className="flex items-start gap-2">
                   <CalendarIcon className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
                   <div className="min-w-0">
@@ -51,7 +64,7 @@ export function NotificationDropdown() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>

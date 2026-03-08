@@ -4,8 +4,10 @@ import { motion } from "framer-motion";
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter } from "lucide-react";
+import { Filter, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { startOfWeek, startOfMonth, startOfQuarter, isAfter } from "date-fns";
 
 const AnalyticsPage = () => {
   const { data: leads = [] } = useLeads();
@@ -14,6 +16,7 @@ const AnalyticsPage = () => {
 
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [filterClassification, setFilterClassification] = useState<string>("all");
+  const [timeRange, setTimeRange] = useState<string>("all");
 
   // Build event lookup
   const eventMap = useMemo(() => {
@@ -22,16 +25,30 @@ const AnalyticsPage = () => {
     return map;
   }, [events]);
 
+  // Time-filtered leads
+  const timeFilteredLeads = useMemo(() => {
+    if (timeRange === "all") return leads;
+    const now = new Date();
+    let cutoff: Date;
+    switch (timeRange) {
+      case "week": cutoff = startOfWeek(now, { weekStartsOn: 1 }); break;
+      case "month": cutoff = startOfMonth(now); break;
+      case "quarter": cutoff = startOfQuarter(now); break;
+      default: return leads;
+    }
+    return leads.filter((l) => isAfter(new Date(l.created_at), cutoff));
+  }, [leads, timeRange]);
+
   // Filtered leads
   const filteredLeads = useMemo(() => {
-    return leads.filter((l) => {
+    return timeFilteredLeads.filter((l) => {
       if (filterEvent !== "all" && l.event_id !== filterEvent) return false;
       if (filterClassification !== "all" && l.classification !== filterClassification) return false;
       return true;
     });
-  }, [leads, filterEvent, filterClassification]);
+  }, [timeFilteredLeads, filterEvent, filterClassification]);
 
-  const hasActiveFilters = filterEvent !== "all" || filterClassification !== "all";
+  const hasActiveFilters = filterEvent !== "all" || filterClassification !== "all" || timeRange !== "all";
 
   const classificationData = useMemo(() => [
     { name: "Hot", value: filteredLeads.filter((l) => l.classification === "hot").length, color: "hsl(0, 84%, 60%)" },
@@ -88,6 +105,12 @@ const AnalyticsPage = () => {
 
   const isEmpty = leads.length === 0;
 
+  const clearFilters = () => {
+    setFilterEvent("all");
+    setFilterClassification("all");
+    setTimeRange("all");
+  };
+
   return (
     <DashboardLayout title="Analytics" subtitle={`Performance insights${hasActiveFilters ? ` · ${filteredLeads.length} of ${leads.length} leads` : ""}`}>
       {isEmpty ? (
@@ -99,6 +122,27 @@ const AnalyticsPage = () => {
           {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
             <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+
+            {/* Time range filter */}
+            <div className="flex items-center gap-1 border border-border rounded-md p-0.5">
+              {[
+                { value: "week", label: "Week" },
+                { value: "month", label: "Month" },
+                { value: "quarter", label: "Quarter" },
+                { value: "all", label: "All Time" },
+              ].map((t) => (
+                <Button
+                  key={t.value}
+                  variant={timeRange === t.value ? "default" : "ghost"}
+                  size="sm"
+                  className="h-6 text-[11px] px-2.5"
+                  onClick={() => setTimeRange(t.value)}
+                >
+                  {t.label}
+                </Button>
+              ))}
+            </div>
+
             <Select value={filterEvent} onValueChange={setFilterEvent}>
               <SelectTrigger className="h-8 w-[180px] text-xs">
                 <SelectValue placeholder="All Events" />
@@ -122,7 +166,7 @@ const AnalyticsPage = () => {
               </SelectContent>
             </Select>
             {hasActiveFilters && (
-              <button onClick={() => { setFilterEvent("all"); setFilterClassification("all"); }} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={clearFilters} className="text-[11px] text-muted-foreground hover:text-foreground transition-colors">
                 Clear filters
               </button>
             )}
