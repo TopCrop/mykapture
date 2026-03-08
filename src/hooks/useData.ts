@@ -54,6 +54,43 @@ export function useProfiles() {
   });
 }
 
+export function useMyProfile() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["profiles", "mine", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      if (error) throw error;
+      return data as ProfileRow;
+    },
+    enabled: !!user,
+  });
+}
+
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<ProfileRow> & { id: string }) => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles"] });
+    },
+  });
+}
+
 export function useUserRoles() {
   const { isAdmin } = useAuth();
   return useQuery({
