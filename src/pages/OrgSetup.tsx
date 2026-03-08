@@ -31,6 +31,11 @@ const OrgSetupPage = () => {
     );
   }
 
+  // Super admins don't need an org — redirect to super admin dashboard
+  if (isSuperAdmin) {
+    return <Navigate to="/super-admin" replace />;
+  }
+
   const handleCreate = async () => {
     if (!user || !orgName.trim() || !domain.trim()) return;
     setCreating(true);
