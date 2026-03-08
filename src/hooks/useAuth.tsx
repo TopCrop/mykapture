@@ -12,6 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isManager: boolean;
   isSalesRep: boolean;
+  isPasswordRecovery: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isManager: false,
   isSalesRep: false,
+  isPasswordRecovery: false,
   signOut: async () => {},
 });
 
@@ -33,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const fetchRole = async (userId: string) => {
     const { data } = await supabase
@@ -44,7 +47,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setIsPasswordRecovery(true);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -85,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSalesRep = userRole === "sales_rep";
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, userRole, isAdmin, isManager, isSalesRep, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, userRole, isAdmin, isManager, isSalesRep, isPasswordRecovery, signOut }}>
       {children}
     </AuthContext.Provider>
   );
