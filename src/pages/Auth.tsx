@@ -44,7 +44,10 @@ type AuthView = "login" | "signup" | "forgot";
 
 const AuthPage = () => {
   const { user, loading: authLoading } = useAuth();
-  const [view, setView] = useState<AuthView>("login");
+  const [searchParams] = useSearchParams();
+  const inviteOrgId = searchParams.get("invite");
+  const [orgName, setOrgName] = useState<string | null>(null);
+  const [view, setView] = useState<AuthView>(inviteOrgId ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -52,6 +55,14 @@ const AuthPage = () => {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+
+  // Fetch org name for invite banner
+  useEffect(() => {
+    if (!inviteOrgId) return;
+    supabase.from("organizations").select("name").eq("id", inviteOrgId).single().then(({ data }) => {
+      if (data) setOrgName(data.name);
+    });
+  }, [inviteOrgId]);
 
   if (authLoading) {
     return (
