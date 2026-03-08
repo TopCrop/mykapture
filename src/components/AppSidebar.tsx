@@ -5,7 +5,11 @@ import {
   BarChart3,
   Settings,
   Zap,
+  LogOut,
 } from "lucide-react";
+import { NavLink } from "@/components/NavLink";
+import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import {
