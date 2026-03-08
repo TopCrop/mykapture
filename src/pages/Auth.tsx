@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Loader2, ArrowLeft, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, CheckCircle2, Eye, EyeOff, Users } from "lucide-react";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -44,7 +44,10 @@ type AuthView = "login" | "signup" | "forgot";
 
 const AuthPage = () => {
   const { user, loading: authLoading } = useAuth();
-  const [view, setView] = useState<AuthView>("login");
+  const [searchParams] = useSearchParams();
+  const inviteOrgId = searchParams.get("invite");
+  const [orgName, setOrgName] = useState<string | null>(null);
+  const [view, setView] = useState<AuthView>(inviteOrgId ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -52,6 +55,14 @@ const AuthPage = () => {
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
+
+  // Fetch org name for invite banner
+  useEffect(() => {
+    if (!inviteOrgId) return;
+    supabase.from("organizations").select("name").eq("id", inviteOrgId).single().then(({ data }) => {
+      if (data) setOrgName(data.name);
+    });
+  }, [inviteOrgId]);
 
   if (authLoading) {
     return (
@@ -66,7 +77,8 @@ const AuthPage = () => {
   }
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    if (view === "signup" && value.includes("@")) {
+    // Skip domain validation for invited users
+    if (view === "signup" && value.includes("@") && !inviteOrgId) {
       setEmailError(getEmailDomainError(value));
     } else {
       setEmailError(null);
@@ -82,11 +94,14 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       } else if (view === "signup") {
-        const domainErr = getEmailDomainError(email);
-        if (domainErr) {
-          setEmailError(domainErr);
-          toast.error(domainErr);
-          return;
+        // Skip domain validation for invited signups
+        if (!inviteOrgId) {
+          const domainErr = getEmailDomainError(email);
+          if (domainErr) {
+            setEmailError(domainErr);
+            toast.error(domainErr);
+            return;
+          }
         }
         if (!getPasswordStrength(password)) {
           toast.error("Please meet all password requirements.");
@@ -170,6 +185,15 @@ const AuthPage = () => {
             </p>
           </div>
         </div>
+
+        {inviteOrgId && orgName && (
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <Users className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-sm text-foreground">
+              You've been invited to join <span className="font-semibold text-primary">{orgName}</span>
+            </p>
+          </div>
+        )}
 
         <div className="glass-card-elevated p-6 space-y-5">
           {signupSuccess ? (
