@@ -6,10 +6,11 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Loader2, ArrowLeft } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { PasswordStrengthIndicator, getPasswordStrength } from "@/components/PasswordStrengthIndicator";
 
 type AuthView = "login" | "signup" | "forgot";
 
