@@ -22,6 +22,7 @@ const AuthPage = () => {
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   if (authLoading) {
     return (
