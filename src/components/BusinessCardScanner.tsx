@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Camera, Upload, Loader2, Check, X, Video, CircleDot } from "lucide-react";
 import { toast } from "sonner";
 
 interface ExtractedContact {
@@ -20,7 +20,7 @@ interface BusinessCardScannerProps {
 }
 
 // Resize image to reduce payload size for the edge function
-function resizeImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.6): Promise<string> {
+function resizeImage(file: File | Blob, maxWidth = 800, maxHeight = 800, quality = 0.6): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
@@ -37,7 +37,6 @@ function resizeImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.6)
         canvas.height = height;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0, width, height);
-        // Use lower quality JPEG to keep base64 payload small
         const dataUrl = canvas.toDataURL("image/jpeg", quality);
         resolve(dataUrl);
       };
@@ -49,25 +48,86 @@ function resizeImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.6)
   });
 }
 
+// Resize from a data URL string
+function resizeDataUrl(dataUrl: string, maxWidth = 800, maxHeight = 800, quality = 0.5): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      let { width, height } = img;
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => reject(new Error("Failed to resize"));
+    img.src = dataUrl;
+  });
+}
+
 export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCardScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractedContact | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
-  const processImage = async (file: File) => {
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } },
+      });
+      streamRef.current = stream;
+      setCameraActive(true);
+      // Attach stream after state update renders the video element
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      });
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      toast.error("Could not access camera. Please allow camera permissions or use Upload instead.");
+    }
+  }, []);
+
+  const capturePhoto = useCallback(async () => {
+    const video = videoRef.current;
+    if (!video) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(video, 0, 0);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    stopCamera();
+    // Resize and process
+    const resized = await resizeDataUrl(dataUrl, 800, 800, 0.5);
+    setPreview(resized);
+    processBase64(resized);
+  }, [stopCamera]);
+
+  const processBase64 = async (dataUrl: string) => {
     setScanning(true);
     setResult(null);
-
     try {
-      console.log("Processing image:", file.name, "size:", file.size, "type:", file.type);
-      
-      // Resize aggressively — camera photos can be 10MB+
-      const dataUrl = await resizeImage(file, 800, 800, 0.5);
-      setPreview(dataUrl);
       const base64 = dataUrl.split(",")[1];
-      
       console.log("Base64 length:", base64.length, "chars (~", Math.round(base64.length * 0.75 / 1024), "KB)");
 
       const controller = new AbortController();
@@ -109,10 +169,19 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     }
   };
 
+  const processImage = async (file: File) => {
+    try {
+      const dataUrl = await resizeImage(file, 800, 800, 0.5);
+      setPreview(dataUrl);
+      processBase64(dataUrl);
+    } catch (error: any) {
+      toast.error("Failed to process image");
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processImage(file);
-    // Reset input so the same file can be selected again
     e.target.value = "";
   };
 
@@ -124,11 +193,21 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   };
 
   const handleClose = () => {
+    stopCamera();
     setPreview(null);
     setResult(null);
     setScanning(false);
     onClose();
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
@@ -138,17 +217,50 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
             <Camera className="h-5 w-5 text-primary" />
             Scan Business Card
           </DialogTitle>
+          <DialogDescription>
+            Take a photo or upload an image of a business card to extract contact information.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {!preview && !scanning && (
+          {/* Camera viewfinder */}
+          {cameraActive && (
+            <div className="relative rounded-lg overflow-hidden border bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full max-h-64 object-cover"
+              />
+              {/* Viewfinder overlay */}
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-4 border-2 border-primary/40 rounded-lg" />
+                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-lg" />
+                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-primary rounded-tr-lg" />
+                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-primary rounded-bl-lg" />
+                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-primary rounded-br-lg" />
+              </div>
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3">
+                <Button size="sm" onClick={capturePhoto} className="gap-1.5 shadow-lg">
+                  <CircleDot className="h-4 w-4" /> Capture
+                </Button>
+                <Button size="sm" variant="secondary" onClick={stopCamera} className="shadow-lg">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Initial buttons */}
+          {!preview && !scanning && !cameraActive && (
             <div className="flex flex-col gap-3">
               <Button
                 variant="outline"
                 className="h-24 border-dashed flex flex-col gap-2"
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={startCamera}
               >
-                <Camera className="h-6 w-6 text-muted-foreground" />
+                <Video className="h-6 w-6 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Take Photo</span>
               </Button>
               <Button
@@ -159,7 +271,6 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
                 <Upload className="h-6 w-6 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">Upload Image</span>
               </Button>
-              <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             </div>
           )}
