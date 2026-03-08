@@ -38,7 +38,7 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout title="Settings" subtitle="System configuration">
-      <Tabs defaultValue="profile" className="space-y-4">
+      <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "profile"} className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="h-3.5 w-3.5" /> Profile</TabsTrigger>
           <TabsTrigger value="integrations" className="gap-1.5 text-xs"><Plug className="h-3.5 w-3.5" /> Email Integrations</TabsTrigger>
