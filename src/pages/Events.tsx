@@ -9,7 +9,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -25,12 +26,25 @@ const EventsPage = () => {
   const deleteEvent = useDeleteEvent();
   const canManageEvents = isAdmin || isManager;
 
+  const [searchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventRow | null>(null);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [status, setStatus] = useState("upcoming");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Initialize filter from URL params
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam) setStatusFilter(statusParam);
+  }, [searchParams]);
+
+  const filteredEvents = useMemo(() => {
+    if (statusFilter === "all") return events;
+    return events.filter((e) => e.status === statusFilter);
+  }, [events, statusFilter]);
 
   const openCreate = () => {
     setEditingEvent(null);
@@ -99,13 +113,28 @@ const EventsPage = () => {
           </div>
         )}
 
-        {events.length === 0 ? (
+        {/* Status filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {["all", "active", "upcoming", "completed"].map((s) => (
+            <Button
+              key={s}
+              variant={statusFilter === s ? "default" : "outline"}
+              size="sm"
+              className="text-xs h-7 capitalize"
+              onClick={() => setStatusFilter(s)}
+            >
+              {s === "all" ? "All" : s}
+            </Button>
+          ))}
+        </div>
+
+        {filteredEvents.length === 0 ? (
           <div className="glass-card rounded-xl p-8 text-center text-sm text-muted-foreground">
-            {isLoading ? "Loading..." : "No events yet."}
+            {isLoading ? "Loading..." : statusFilter !== "all" ? `No ${statusFilter} events.` : "No events yet."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {events.map((event, i) => {
+            {filteredEvents.map((event, i) => {
               const leadCount = leads.filter((l) => l.event_id === event.id).length;
               const hotCount = leads.filter((l) => l.event_id === event.id && l.classification === "hot").length;
 

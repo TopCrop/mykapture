@@ -1,7 +1,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
 import { useLeads, useEvents, useUpdateLead, useDeleteLead } from "@/hooks/useData";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -314,11 +315,21 @@ const LeadsPage = () => {
   const { data: events = [] } = useEvents();
   const { user, isSalesRep, isAdmin } = useAuth();
   const deleteLead = useDeleteLead();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [followupFilter, setFollowupFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Initialize filters from URL params
+  useEffect(() => {
+    const classification = searchParams.get("classification");
+    if (classification) setClassFilter(classification);
+    const followup = searchParams.get("followup");
+    if (followup) setFollowupFilter(followup);
+  }, [searchParams]);
 
   // Sales reps only see their own leads
   const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
@@ -326,7 +337,8 @@ const LeadsPage = () => {
   const filtered = displayLeads.filter((lead) => {
     const matchesSearch = !search || lead.name.toLowerCase().includes(search.toLowerCase()) || (lead.company || "").toLowerCase().includes(search.toLowerCase());
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
-    return matchesSearch && matchesClass;
+    const matchesFollowup = followupFilter === "all" || (followupFilter === "sent" && lead.follow_up_email_sent);
+    return matchesSearch && matchesClass && matchesFollowup;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / LEADS_PER_PAGE));
