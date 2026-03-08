@@ -24,13 +24,15 @@ export default defineConfig(({ mode }) => ({
       manifest: {
         name: "Kapture — Conference Edition",
         short_name: "Kapture",
-        description: "Secure conference lead capture and qualification",
+        description: "Capture, qualify, and sync conference leads instantly",
         theme_color: "#1e293b",
         background_color: "#0f172a",
         display: "standalone",
         orientation: "portrait",
         icons: [
           { src: "/favicon.ico", sizes: "64x64", type: "image/x-icon" },
+          { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any maskable" },
+          { src: "/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
     }),

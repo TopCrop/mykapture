@@ -13,10 +13,11 @@ import { Calendar } from "@/components/ui/calendar";
 import { ClassificationBadge } from "@/components/LeadBadges";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import { VoiceNoteRecorder } from "@/components/VoiceNoteRecorder";
-import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock } from "lucide-react";
+import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { queueLeadOffline } from "@/lib/offlineQueue";
 import type { LeadClassification } from "@/types/lead";
 
 const NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"];
@@ -24,15 +25,17 @@ const NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "ma
 interface LeadCaptureDialogProps {
   open: boolean;
   onClose: () => void;
+  mode?: "quick" | "full";
 }
 
-export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
+export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureDialogProps) {
   const { user } = useAuth();
   const createLead = useCreateLead();
   const createBooking = useCreateFollowUpBooking();
   const { data: events } = useEvents();
   const [step, setStep] = useState(1);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [captureMode, setCaptureMode] = useState<"quick" | "full">(mode);
 
   // Contact info
   const [name, setName] = useState("");
@@ -76,6 +79,7 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
 
   const resetForm = () => {
     setStep(1);
+    setCaptureMode(mode);
     setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone("");
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
@@ -108,35 +112,45 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
   const handleSubmit = async () => {
     if (!user) return;
     const finalClassification = classOverride || scoring.classification;
-    try {
-      const leadData = await createLead.mutateAsync({
-        name,
-        title: title || null,
-        company: company || null,
-        email: email || null,
-        phone: phone || null,
-        bant_budget: budget || null,
-        bant_authority: authority || null,
-        bant_need: needs.length > 0 ? needs : null,
-        bant_timeline: timeline || null,
-        bant_employees: employees || null,
-        event_id: eventId || null,
-        notes: notes || null,
-        voice_note_url: voiceNoteUrl || null,
-        transcription: transcription || null,
-        score: scoring.score,
-        classification: finalClassification,
-        captured_by: user.id,
-      });
+    const leadData = {
+      name,
+      title: title || null,
+      company: company || null,
+      email: email || null,
+      phone: phone || null,
+      bant_budget: budget || null,
+      bant_authority: authority || null,
+      bant_need: needs.length > 0 ? needs : null,
+      bant_timeline: timeline || null,
+      bant_employees: employees || null,
+      event_id: eventId || null,
+      notes: notes || null,
+      voice_note_url: voiceNoteUrl || null,
+      transcription: transcription || null,
+      score: scoring.score,
+      classification: finalClassification,
+      captured_by: user.id,
+    };
 
-      // Create follow-up booking if scheduled
-      if (bookFollowUp && followUpDate && leadData) {
+    // Offline support
+    if (!navigator.onLine) {
+      queueLeadOffline(leadData);
+      toast.success("Lead saved offline! Will sync when connected.");
+      resetForm();
+      onClose();
+      return;
+    }
+
+    try {
+      const created = await createLead.mutateAsync(leadData);
+
+      if (bookFollowUp && followUpDate && created) {
         const [hours, minutes] = followUpTime.split(":").map(Number);
         const bookingDate = new Date(followUpDate);
         bookingDate.setHours(hours, minutes, 0, 0);
 
         await createBooking.mutateAsync({
-          lead_id: leadData.id,
+          lead_id: created.id,
           booked_by: user.id,
           follow_up_date: bookingDate.toISOString(),
           duration_minutes: parseInt(followUpDuration),
@@ -152,15 +166,100 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
     }
   };
 
+  const isQuickMode = captureMode === "quick";
+
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => { if (!o) { resetForm(); onClose(); } }}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Capture New Lead — Step {step}/3</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {isQuickMode ? (
+                <>
+                  <Zap className="h-4 w-4 text-primary" />
+                  Quick Capture
+                </>
+              ) : (
+                `Capture New Lead — Step ${step}/3`
+              )}
+            </DialogTitle>
+            {/* Mode toggle */}
+            {step === 1 && (
+              <div className="flex gap-1 mt-1">
+                <Button
+                  variant={isQuickMode ? "default" : "outline"}
+                  size="sm"
+                  className="text-[10px] h-6 px-2 gap-1"
+                  onClick={() => setCaptureMode("quick")}
+                >
+                  <Zap className="h-2.5 w-2.5" /> Quick
+                </Button>
+                <Button
+                  variant={!isQuickMode ? "default" : "outline"}
+                  size="sm"
+                  className="text-[10px] h-6 px-2"
+                  onClick={() => setCaptureMode("full")}
+                >
+                  Full BANT
+                </Button>
+              </div>
+            )}
           </DialogHeader>
 
-          {step === 1 && (
+          {/* QUICK MODE: single step */}
+          {isQuickMode && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-muted-foreground">CONTACT INFO</h3>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setScannerOpen(true)}>
+                  <Camera className="h-3.5 w-3.5" />
+                  Scan Card
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs">Full Name *</Label>
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" autoFocus />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Company</Label>
+                  <Input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="TechCorp" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@techcorp.com" />
+                </div>
+              </div>
+
+              {/* Voice Note */}
+              <div className="space-y-1.5">
+                <Label className="text-xs">Voice Note (optional)</Label>
+                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                {transcription && (
+                  <div className="p-2 rounded bg-muted/50 border text-xs text-muted-foreground mt-1">
+                    <strong>Transcription:</strong> {transcription.slice(0, 150)}{transcription.length > 150 ? "…" : ""}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Quick Notes</Label>
+                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Key takeaway..." rows={2} />
+              </div>
+
+              <Button className="w-full" onClick={handleSubmit} disabled={!name.trim() || createLead.isPending}>
+                {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                {!navigator.onLine ? "Save Offline" : "Capture Lead"}
+              </Button>
+
+              <p className="text-[10px] text-muted-foreground text-center">
+                You can add BANT qualification later from the lead detail view.
+              </p>
+            </div>
+          )}
+
+          {/* FULL MODE: 3 steps */}
+          {!isQuickMode && step === 1 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-muted-foreground">CONTACT INFORMATION</h3>
@@ -220,7 +319,7 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
             </div>
           )}
 
-          {step === 2 && (
+          {!isQuickMode && step === 2 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-muted-foreground">BANT QUALIFICATION</h3>
               <div className="grid grid-cols-2 gap-3">
@@ -366,7 +465,7 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
             </div>
           )}
 
-          {step === 3 && (
+          {!isQuickMode && step === 3 && (
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-muted-foreground">REVIEW & SUBMIT</h3>
 
@@ -429,7 +528,7 @@ export function LeadCaptureDialog({ open, onClose }: LeadCaptureDialogProps) {
                 <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Back</Button>
                 <Button className="flex-1" onClick={handleSubmit} disabled={createLead.isPending}>
                   {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Capture Lead
+                  {!navigator.onLine ? "Save Offline" : "Capture Lead"}
                 </Button>
               </div>
             </div>

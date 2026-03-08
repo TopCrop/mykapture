@@ -1,15 +1,18 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents } from "@/hooks/useData";
+import { useLeads, useEvents, useUpdateLead } from "@/hooks/useData";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Mail, Loader2, Check, Download } from "lucide-react";
+import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { LeadClassification, SyncStatus } from "@/types/lead";
 import type { Database } from "@/integrations/supabase/types";
@@ -111,6 +114,10 @@ function FollowUpEmailButton({ lead }: { lead: LeadRow }) {
 }
 
 function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | null; open: boolean; onClose: () => void; events: Database["public"]["Tables"]["events"]["Row"][] }) {
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState<Partial<LeadRow>>({});
+  const updateLead = useUpdateLead();
+
   if (!lead) return null;
   const event = events.find((e) => e.id === lead.event_id);
 
@@ -120,60 +127,183 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
     timeline: { immediate: "Immediate", "3_months": "3 Months", "6_months": "6 Months", "1_year_plus": "1 Year+" },
   };
 
+  const startEditing = () => {
+    setEditData({
+      name: lead.name,
+      title: lead.title,
+      company: lead.company,
+      email: lead.email,
+      phone: lead.phone,
+      notes: lead.notes,
+      bant_budget: lead.bant_budget,
+      bant_authority: lead.bant_authority,
+      bant_timeline: lead.bant_timeline,
+      bant_employees: lead.bant_employees,
+    });
+    setEditing(true);
+  };
+
+  const saveEdits = async () => {
+    try {
+      await updateLead.mutateAsync({ id: lead.id, ...editData });
+      toast.success("Lead updated!");
+      setEditing(false);
+      onClose();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { setEditing(false); onClose(); } }}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            {lead.name}
-            <ClassificationBadge classification={lead.classification as LeadClassification} />
+            {editing ? "Edit Lead" : lead.name}
+            {!editing && <ClassificationBadge classification={lead.classification as LeadClassification} />}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 text-sm">
-          <div className="grid grid-cols-2 gap-3">
-            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Title</span><p className="font-medium mt-0.5">{lead.title || "—"}</p></div>
-            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Company</span><p className="font-medium mt-0.5">{lead.company || "—"}</p></div>
-            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Email</span><p className="font-medium mt-0.5">{lead.email || "—"}</p></div>
-            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Phone</span><p className="font-medium mt-0.5">{lead.phone || "—"}</p></div>
-            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Event</span><p className="font-medium mt-0.5">{event?.name || "—"}</p></div>
-            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Captured</span><p className="font-medium mt-0.5">{new Date(lead.created_at).toLocaleDateString()}</p></div>
-          </div>
-
-          <div className="brand-line" />
-
-          <div>
-            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">BANT Qualification</h4>
-            <div className="grid grid-cols-2 gap-3">
-              <div><span className="text-muted-foreground text-[11px]">Budget</span><p className="font-medium mt-0.5">{lead.bant_budget ? bantLabels.budget[lead.bant_budget] : "—"}</p></div>
-              <div><span className="text-muted-foreground text-[11px]">Authority</span><p className="font-medium mt-0.5">{lead.bant_authority ? bantLabels.authority[lead.bant_authority] : "—"}</p></div>
-              <div><span className="text-muted-foreground text-[11px]">Timeline</span><p className="font-medium mt-0.5">{lead.bant_timeline ? bantLabels.timeline[lead.bant_timeline] : "—"}</p></div>
-              <div><span className="text-muted-foreground text-[11px]">Employees</span><p className="font-medium mt-0.5">{lead.bant_employees || "—"}</p></div>
-            </div>
-            {lead.bant_need && lead.bant_need.length > 0 && (
-              <div className="mt-2">
-                <span className="text-muted-foreground text-[11px]">Needs</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {lead.bant_need.map((n) => <Badge key={n} variant="secondary" className="text-[10px]">{n}</Badge>)}
+          {editing ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs">Name</Label>
+                  <Input value={editData.name || ""} onChange={(e) => setEditData((d) => ({ ...d, name: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Title</Label>
+                  <Input value={editData.title || ""} onChange={(e) => setEditData((d) => ({ ...d, title: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Company</Label>
+                  <Input value={editData.company || ""} onChange={(e) => setEditData((d) => ({ ...d, company: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email</Label>
+                  <Input type="email" value={editData.email || ""} onChange={(e) => setEditData((d) => ({ ...d, email: e.target.value }))} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Phone</Label>
+                  <Input value={editData.phone || ""} onChange={(e) => setEditData((d) => ({ ...d, phone: e.target.value }))} />
                 </div>
               </div>
-            )}
-          </div>
-
-          {lead.notes && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Budget</Label>
+                  <Select value={editData.bant_budget || ""} onValueChange={(v) => setEditData((d) => ({ ...d, bant_budget: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="exploring">Exploring</SelectItem>
+                      <SelectItem value="no_budget">No Budget</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Authority</Label>
+                  <Select value={editData.bant_authority || ""} onValueChange={(v) => setEditData((d) => ({ ...d, bant_authority: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="decision_maker">Decision Maker</SelectItem>
+                      <SelectItem value="influencer">Influencer</SelectItem>
+                      <SelectItem value="researcher">Researcher</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Timeline</Label>
+                  <Select value={editData.bant_timeline || ""} onValueChange={(v) => setEditData((d) => ({ ...d, bant_timeline: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="immediate">Immediate</SelectItem>
+                      <SelectItem value="3_months">3 Months</SelectItem>
+                      <SelectItem value="6_months">6 Months</SelectItem>
+                      <SelectItem value="1_year_plus">1 Year+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Employees</Label>
+                  <Select value={editData.bant_employees || ""} onValueChange={(v) => setEditData((d) => ({ ...d, bant_employees: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1-50">1–50</SelectItem>
+                      <SelectItem value="50-200">50–200</SelectItem>
+                      <SelectItem value="200-500">200–500</SelectItem>
+                      <SelectItem value="500-1000">500–1,000</SelectItem>
+                      <SelectItem value="1000+">1,000+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Notes</Label>
+                <Textarea value={editData.notes || ""} onChange={(e) => setEditData((d) => ({ ...d, notes: e.target.value }))} rows={3} />
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 gap-1.5" onClick={() => setEditing(false)}>
+                  <X className="h-3.5 w-3.5" /> Cancel
+                </Button>
+                <Button className="flex-1 gap-1.5" onClick={saveEdits} disabled={updateLead.isPending}>
+                  {updateLead.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save
+                </Button>
+              </div>
+            </div>
+          ) : (
             <>
+              <div className="grid grid-cols-2 gap-3">
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Title</span><p className="font-medium mt-0.5">{lead.title || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Company</span><p className="font-medium mt-0.5">{lead.company || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Email</span><p className="font-medium mt-0.5">{lead.email || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Phone</span><p className="font-medium mt-0.5">{lead.phone || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Event</span><p className="font-medium mt-0.5">{event?.name || "—"}</p></div>
+                <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Captured</span><p className="font-medium mt-0.5">{new Date(lead.created_at).toLocaleDateString()}</p></div>
+              </div>
+
               <div className="brand-line" />
+
               <div>
-                <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.notes}</p>
+                <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">BANT Qualification</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><span className="text-muted-foreground text-[11px]">Budget</span><p className="font-medium mt-0.5">{lead.bant_budget ? bantLabels.budget[lead.bant_budget] : "—"}</p></div>
+                  <div><span className="text-muted-foreground text-[11px]">Authority</span><p className="font-medium mt-0.5">{lead.bant_authority ? bantLabels.authority[lead.bant_authority] : "—"}</p></div>
+                  <div><span className="text-muted-foreground text-[11px]">Timeline</span><p className="font-medium mt-0.5">{lead.bant_timeline ? bantLabels.timeline[lead.bant_timeline] : "—"}</p></div>
+                  <div><span className="text-muted-foreground text-[11px]">Employees</span><p className="font-medium mt-0.5">{lead.bant_employees || "—"}</p></div>
+                </div>
+                {lead.bant_need && lead.bant_need.length > 0 && (
+                  <div className="mt-2">
+                    <span className="text-muted-foreground text-[11px]">Needs</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {lead.bant_need.map((n) => <Badge key={n} variant="secondary" className="text-[10px]">{n}</Badge>)}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {lead.notes && (
+                <>
+                  <div className="brand-line" />
+                  <div>
+                    <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.notes}</p>
+                  </div>
+                </>
+              )}
+
+              <div className="brand-line" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ScoreBadge score={lead.score} />
+                  <SyncBadge status={lead.sync_status as SyncStatus} />
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={startEditing}>
+                  <Pencil className="h-3 w-3" /> Edit
+                </Button>
               </div>
             </>
           )}
-
-          <div className="brand-line" />
-          <div className="flex items-center justify-between">
-            <ScoreBadge score={lead.score} />
-            <SyncBadge status={lead.sync_status as SyncStatus} />
-          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -183,12 +313,16 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
+  const { user, isSalesRep } = useAuth();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
 
-  const filtered = leads.filter((lead) => {
+  // Sales reps only see their own leads
+  const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
+
+  const filtered = displayLeads.filter((lead) => {
     const matchesSearch = !search || lead.name.toLowerCase().includes(search.toLowerCase()) || (lead.company || "").toLowerCase().includes(search.toLowerCase());
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
     return matchesSearch && matchesClass;
@@ -218,7 +352,7 @@ const LeadsPage = () => {
   };
 
   return (
-    <DashboardLayout title="Leads" subtitle={`${filtered.length} leads captured`}>
+    <DashboardLayout title="Leads" subtitle={`${filtered.length} ${isSalesRep ? "my " : ""}leads captured`}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -248,7 +382,7 @@ const LeadsPage = () => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card overflow-hidden">
           {filtered.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
-              {isLoading ? "Loading..." : leads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
+              {isLoading ? "Loading..." : displayLeads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
             </div>
           ) : (
             <div className="overflow-x-auto">

@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
+type LeadUpdate = Database["public"]["Tables"]["leads"]["Update"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type FollowUpBookingInsert = Database["public"]["Tables"]["follow_up_bookings"]["Insert"];
@@ -63,6 +64,25 @@ export function useCreateLead() {
   });
 }
 
+export function useUpdateLead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: LeadUpdate & { id: string }) => {
+      const { data, error } = await supabase
+        .from("leads")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+    },
+  });
+}
+
 export function useCreateFollowUpBooking() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -87,6 +107,24 @@ export function useFollowUpBookings(leadId?: string) {
       if (error) throw error;
       return data as FollowUpBookingRow[];
     },
+  });
+}
+
+export function useUpcomingFollowUps() {
+  return useQuery({
+    queryKey: ["follow_up_bookings", "upcoming"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("follow_up_bookings")
+        .select("*, leads(name, company)")
+        .eq("status", "scheduled")
+        .gte("follow_up_date", new Date().toISOString())
+        .order("follow_up_date", { ascending: true })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 60000, // refresh every minute
   });
 }
 
@@ -115,44 +153,34 @@ export function calculateLeadScore(lead: {
   let score = 0;
   const reasons: string[] = [];
 
-  // Title scoring
   const title = (lead.title || "").toLowerCase();
   if (/\b(ceo|cto|cfo|coo|cio|cmo|vp|president|founder|owner|chief)\b/.test(title)) {
-    score += 25;
-    reasons.push("C-level/VP title");
+    score += 25; reasons.push("C-level/VP title");
   } else if (/\b(director|head|senior|lead)\b/.test(title)) {
-    score += 15;
-    reasons.push("Senior title");
+    score += 15; reasons.push("Senior title");
   } else if (/\b(manager|supervisor)\b/.test(title)) {
-    score += 10;
-    reasons.push("Manager title");
+    score += 10; reasons.push("Manager title");
   } else {
-    score += 5;
-    reasons.push("Individual contributor");
+    score += 5; reasons.push("Individual contributor");
   }
 
-  // Budget
   if (lead.bant_budget === "confirmed") { score += 25; reasons.push("Budget confirmed"); }
   else if (lead.bant_budget === "exploring") { score += 15; reasons.push("Budget exploring"); }
   else { score += 0; reasons.push("No budget"); }
 
-  // Authority
   if (lead.bant_authority === "decision_maker") { score += 25; reasons.push("Decision maker"); }
   else if (lead.bant_authority === "influencer") { score += 15; reasons.push("Influencer"); }
   else { score += 5; reasons.push("Researcher"); }
 
-  // Timeline
   if (lead.bant_timeline === "immediate") { score += 25; reasons.push("Immediate timeline"); }
   else if (lead.bant_timeline === "3_months") { score += 18; reasons.push("3-month timeline"); }
   else if (lead.bant_timeline === "6_months") { score += 10; reasons.push("6-month timeline"); }
   else { score += 3; reasons.push("1 year+ timeline"); }
 
-  // Company size bonus
   if (lead.bant_employees === "1000+") { score = Math.min(100, score + 5); }
   else if (lead.bant_employees === "500-1000") { score = Math.min(100, score + 3); }
 
   score = Math.min(100, score);
-
   const classification = score >= 75 ? "hot" : score >= 45 ? "warm" : "cold";
 
   return { score, classification, reasons };
