@@ -6,6 +6,7 @@ import {
   Settings,
   FileText,
   LogOut,
+  ShieldCheck,
 } from "lucide-react";
 import { useMyProfile } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
