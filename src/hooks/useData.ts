@@ -270,9 +270,10 @@ export function useUpcomingFollowUps() {
 
 export function useCreateEvent() {
   const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   return useMutation({
     mutationFn: async (event: EventInsert) => {
-      const { data, error } = await supabase.from("events").insert(event).select().single();
+      const { data, error } = await supabase.from("events").insert({ ...event, org_id: orgId } as any).select().single();
       if (error) throw error;
       return data;
     },
