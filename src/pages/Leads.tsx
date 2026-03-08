@@ -306,6 +306,8 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
   );
 }
 
+const LEADS_PER_PAGE = 25;
+
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
@@ -315,6 +317,7 @@ const LeadsPage = () => {
   const [classFilter, setClassFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Sales reps only see their own leads
   const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
@@ -324,6 +327,14 @@ const LeadsPage = () => {
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
     return matchesSearch && matchesClass;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LEADS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedLeads = filtered.slice((safeCurrentPage - 1) * LEADS_PER_PAGE, safeCurrentPage * LEADS_PER_PAGE);
+
+  // Reset page when filters change
+  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); };
+  const handleClassFilter = (value: string) => { setClassFilter(value); setCurrentPage(1); };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
