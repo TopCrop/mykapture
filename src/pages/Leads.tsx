@@ -62,7 +62,7 @@ function FollowUpEmailButton({ lead }: { lead: LeadRow }) {
       <Button
         variant="ghost"
         size="sm"
-        className="h-7 gap-1 text-xs"
+        className="h-7 gap-1 text-xs hover:bg-secondary hover:text-primary"
         onClick={sendFollowUp}
         disabled={sending || !lead.email}
         title={!lead.email ? "No email address" : "Send follow-up email"}
@@ -87,18 +87,19 @@ function FollowUpEmailButton({ lead }: { lead: LeadRow }) {
             </DialogHeader>
             <div className="space-y-3 text-sm">
               <div>
-                <span className="text-xs text-muted-foreground">To:</span>
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">To:</span>
                 <p className="font-medium">{emailPreview.to}</p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground">Subject:</span>
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Subject:</span>
                 <p className="font-medium">{emailPreview.subject}</p>
               </div>
-              <div className="border-t pt-3">
-                <span className="text-xs text-muted-foreground">Body:</span>
-                <p className="whitespace-pre-wrap mt-1 text-sm">{emailPreview.body}</p>
+              <div className="brand-line" />
+              <div>
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wider">Body:</span>
+                <p className="whitespace-pre-wrap mt-1.5 text-sm text-muted-foreground">{emailPreview.body}</p>
               </div>
-              <p className="text-[10px] text-muted-foreground italic border-t pt-2">
+              <p className="text-[10px] text-muted-foreground/60 italic pt-2">
                 Connect an email provider in Settings to send emails automatically.
               </p>
             </div>
@@ -130,40 +131,46 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
         </DialogHeader>
         <div className="space-y-4 text-sm">
           <div className="grid grid-cols-2 gap-3">
-            <div><span className="text-muted-foreground text-xs">Title</span><p className="font-medium">{lead.title || "—"}</p></div>
-            <div><span className="text-muted-foreground text-xs">Company</span><p className="font-medium">{lead.company || "—"}</p></div>
-            <div><span className="text-muted-foreground text-xs">Email</span><p className="font-medium">{lead.email || "—"}</p></div>
-            <div><span className="text-muted-foreground text-xs">Phone</span><p className="font-medium">{lead.phone || "—"}</p></div>
-            <div><span className="text-muted-foreground text-xs">Event</span><p className="font-medium">{event?.name || "—"}</p></div>
-            <div><span className="text-muted-foreground text-xs">Captured</span><p className="font-medium">{new Date(lead.created_at).toLocaleDateString()}</p></div>
+            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Title</span><p className="font-medium mt-0.5">{lead.title || "—"}</p></div>
+            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Company</span><p className="font-medium mt-0.5">{lead.company || "—"}</p></div>
+            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Email</span><p className="font-medium mt-0.5">{lead.email || "—"}</p></div>
+            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Phone</span><p className="font-medium mt-0.5">{lead.phone || "—"}</p></div>
+            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Event</span><p className="font-medium mt-0.5">{event?.name || "—"}</p></div>
+            <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Captured</span><p className="font-medium mt-0.5">{new Date(lead.created_at).toLocaleDateString()}</p></div>
           </div>
 
-          <div className="border-t pt-3">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-2">BANT QUALIFICATION</h4>
+          <div className="brand-line" />
+
+          <div>
+            <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">BANT Qualification</h4>
             <div className="grid grid-cols-2 gap-3">
-              <div><span className="text-muted-foreground text-xs">Budget</span><p className="font-medium">{lead.bant_budget ? bantLabels.budget[lead.bant_budget] : "—"}</p></div>
-              <div><span className="text-muted-foreground text-xs">Authority</span><p className="font-medium">{lead.bant_authority ? bantLabels.authority[lead.bant_authority] : "—"}</p></div>
-              <div><span className="text-muted-foreground text-xs">Timeline</span><p className="font-medium">{lead.bant_timeline ? bantLabels.timeline[lead.bant_timeline] : "—"}</p></div>
-              <div><span className="text-muted-foreground text-xs">Employees</span><p className="font-medium">{lead.bant_employees || "—"}</p></div>
+              <div><span className="text-muted-foreground text-[11px]">Budget</span><p className="font-medium mt-0.5">{lead.bant_budget ? bantLabels.budget[lead.bant_budget] : "—"}</p></div>
+              <div><span className="text-muted-foreground text-[11px]">Authority</span><p className="font-medium mt-0.5">{lead.bant_authority ? bantLabels.authority[lead.bant_authority] : "—"}</p></div>
+              <div><span className="text-muted-foreground text-[11px]">Timeline</span><p className="font-medium mt-0.5">{lead.bant_timeline ? bantLabels.timeline[lead.bant_timeline] : "—"}</p></div>
+              <div><span className="text-muted-foreground text-[11px]">Employees</span><p className="font-medium mt-0.5">{lead.bant_employees || "—"}</p></div>
             </div>
             {lead.bant_need && lead.bant_need.length > 0 && (
               <div className="mt-2">
-                <span className="text-muted-foreground text-xs">Needs</span>
+                <span className="text-muted-foreground text-[11px]">Needs</span>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {lead.bant_need.map((n) => <Badge key={n} variant="secondary" className="text-xs">{n}</Badge>)}
+                  {lead.bant_need.map((n) => <Badge key={n} variant="secondary" className="text-[10px]">{n}</Badge>)}
                 </div>
               </div>
             )}
           </div>
 
           {lead.notes && (
-            <div className="border-t pt-3">
-              <h4 className="text-xs font-semibold text-muted-foreground mb-1">NOTES</h4>
-              <p className="text-sm whitespace-pre-wrap">{lead.notes}</p>
-            </div>
+            <>
+              <div className="brand-line" />
+              <div>
+                <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">Notes</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{lead.notes}</p>
+              </div>
+            </>
           )}
 
-          <div className="flex items-center justify-between border-t pt-3">
+          <div className="brand-line" />
+          <div className="flex items-center justify-between">
             <ScoreBadge score={lead.score} />
             <SyncBadge status={lead.sync_status as SyncStatus} />
           </div>
@@ -230,46 +237,46 @@ const LeadsPage = () => {
               <SelectItem value="cold">Cold</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
-            <Download className="mr-1.5 h-4 w-4" /> Export
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="gap-1.5 hover:bg-secondary">
+            <Download className="h-4 w-4" /> Export
           </Button>
-          <Button onClick={() => setCaptureOpen(true)} size="sm">
-            <Plus className="mr-1.5 h-4 w-4" /> Capture
+          <Button onClick={() => setCaptureOpen(true)} size="sm" className="gap-1.5">
+            <Plus className="h-4 w-4" /> Capture
           </Button>
         </div>
 
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card rounded-xl overflow-hidden">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card overflow-hidden">
           {filtered.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
+            <div className="p-10 text-center text-sm text-muted-foreground">
               {isLoading ? "Loading..." : leads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left">
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground">Name</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden md:table-cell">Company</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground">Classification</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Score</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">Budget</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden lg:table-cell">Authority</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground hidden sm:table-cell">Sync</th>
-                    <th className="px-5 py-3 text-xs font-medium text-muted-foreground">Follow-up</th>
+                  <tr className="border-b border-border text-left">
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Score</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Follow-up</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((lead) => (
-                    <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                    <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
                       <td className="px-5 py-3">
                         <p className="font-medium">{lead.name}</p>
-                        <p className="text-xs text-muted-foreground md:hidden">{lead.company}</p>
+                        <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
                       </td>
-                      <td className="px-5 py-3 hidden md:table-cell">{lead.company}</td>
+                      <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
                       <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
                       <td className="px-5 py-3 hidden sm:table-cell"><ScoreBadge score={lead.score} /></td>
-                      <td className="px-5 py-3 hidden lg:table-cell text-xs">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
-                      <td className="px-5 py-3 hidden lg:table-cell text-xs">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
+                      <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
+                      <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                       <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                       <td className="px-5 py-3">
                         <FollowUpEmailButton lead={lead} />

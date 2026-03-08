@@ -1,5 +1,4 @@
 import { LeadClassification, SyncStatus } from "@/types/lead";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { CheckCircle, Clock, AlertCircle } from "lucide-react";
 
@@ -11,10 +10,10 @@ export function ClassificationBadge({ classification }: ClassificationBadgeProps
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold",
-        classification === "hot" && "bg-hot/15 text-hot",
-        classification === "warm" && "bg-warm/15 text-warm",
-        classification === "cold" && "bg-cold/15 text-cold"
+        "inline-flex items-center rounded-md px-2.5 py-0.5 text-[11px] font-semibold border",
+        classification === "hot" && "bg-hot/10 text-hot border-hot/20",
+        classification === "warm" && "bg-warm/10 text-warm border-warm/20",
+        classification === "cold" && "bg-cold/10 text-cold border-cold/20"
       )}
     >
       <span
@@ -44,7 +43,7 @@ export function SyncBadge({ status }: SyncBadgeProps) {
   const { icon: Icon, label, className } = config[status];
 
   return (
-    <span className={cn("inline-flex items-center gap-1 text-xs font-medium", className)}>
+    <span className={cn("inline-flex items-center gap-1 text-[11px] font-medium", className)}>
       <Icon className="h-3 w-3" />
       {label}
     </span>
@@ -58,7 +57,7 @@ interface ScoreBadgeProps {
 export function ScoreBadge({ score }: ScoreBadgeProps) {
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+      <div className="h-1.5 w-16 rounded-full bg-secondary overflow-hidden">
         <div
           className={cn(
             "h-full rounded-full transition-all",
@@ -69,7 +68,7 @@ export function ScoreBadge({ score }: ScoreBadgeProps) {
           style={{ width: `${score}%` }}
         />
       </div>
-      <span className="text-xs font-mono font-medium">{score}</span>
+      <span className="text-[11px] font-mono font-medium text-muted-foreground">{score}</span>
     </div>
   );
 }
