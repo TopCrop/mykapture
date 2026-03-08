@@ -391,7 +391,7 @@ const Index = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLeads.slice(0, 10).map((lead) => (
+                  {filteredLeads.slice(0, 10).map((lead, idx) => (
                     <tr
                       key={lead.id}
                       className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
