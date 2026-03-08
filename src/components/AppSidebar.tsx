@@ -8,6 +8,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useMyProfile } from "@/hooks/useData";
+import { useOrg } from "@/hooks/useOrg";
 import { NavLink } from "@/components/NavLink";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -28,21 +29,22 @@ import {
 } from "@/components/ui/sidebar";
 
 const allMainItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Events", url: "/events", icon: Calendar, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager"] },
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Events", url: "/events", icon: Calendar, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager", "super_admin"] },
 ];
 
 const allSettingsItems = [
-  { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep"] },
-  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin"] },
+  { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep", "super_admin"] },
+  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin", "super_admin"] },
 ];
 
 const roleLabels: Record<string, string> = {
   admin: "Admin",
   manager: "Manager",
   sales_rep: "Sales Rep",
+  super_admin: "Super Admin",
 };
 
 export function AppSidebar() {
@@ -51,6 +53,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, signOut } = useAuth();
+  const { org } = useOrg();
   const isActive = (path: string) => location.pathname === path;
   const { data: userProfile } = useMyProfile();
   const avatarUrl = userProfile?.avatar_url;
@@ -158,10 +161,15 @@ export function AppSidebar() {
               )}
               <div className="flex-1 min-w-0 text-left">
                 <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                   <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium border-primary/30 text-primary">
                     {roleLabels[role] || role}
                   </Badge>
+                  {org && (
+                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 font-medium">
+                      {org.name}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </button>

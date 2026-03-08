@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useOrg } from "@/hooks/useOrg";
 import { Navigate } from "react-router-dom";
 import type { AppRole } from "@/hooks/useAuth";
 
@@ -9,8 +10,9 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, userRole } = useAuth();
+  const { hasOrg, loading: orgLoading } = useOrg();
 
-  if (loading) {
+  if (loading || orgLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -20,6 +22,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // If user has no org and isn't on org-setup, redirect there
+  // Exception: super_admin can always access everything
+  if (!hasOrg && userRole !== "super_admin") {
+    // Allow org-setup page itself
+    if (window.location.pathname !== "/org-setup") {
+      return <Navigate to="/org-setup" replace />;
+    }
   }
 
   if (allowedRoles && userRole && !allowedRoles.includes(userRole)) {

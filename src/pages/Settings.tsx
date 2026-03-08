@@ -1,7 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads } from "@/hooks/useData";
@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
 import { ProfileSettings } from "@/components/ProfileSettings";
+import { OrganizationSettings } from "@/components/OrganizationSettings";
 import type { AppRole } from "@/hooks/useAuth";
 import { useMemo } from "react";
 
 const SettingsPage = () => {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, isSuperAdmin, user } = useAuth();
   const { data: profiles = [] } = useProfiles();
   const { data: roles = [] } = useUserRoles();
   const { data: submissions = [] } = useContactSubmissions();
@@ -54,6 +55,7 @@ const SettingsPage = () => {
           <TabsTrigger value="integrations" className="gap-1.5 text-xs"><Plug className="h-3.5 w-3.5" /> Email Integrations</TabsTrigger>
           {isAdmin && (
             <>
+              <TabsTrigger value="organization" className="gap-1.5 text-xs"><Building2 className="h-3.5 w-3.5" /> Organization</TabsTrigger>
               <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
               <TabsTrigger value="submissions" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> Contact Submissions</TabsTrigger>
               <TabsTrigger value="config" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Configuration</TabsTrigger>
@@ -63,6 +65,9 @@ const SettingsPage = () => {
 
         {isAdmin && (
           <>
+            <TabsContent value="organization">
+              <OrganizationSettings />
+            </TabsContent>
             <TabsContent value="team">
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
                 <div className="p-5 pb-3">
@@ -108,6 +113,7 @@ const SettingsPage = () => {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
                                       <SelectItem value="admin">Admin</SelectItem>
                                       <SelectItem value="manager">Manager</SelectItem>
                                       <SelectItem value="sales_rep">Sales Rep</SelectItem>

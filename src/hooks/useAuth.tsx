@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "admin" | "sales_rep" | "manager";
+export type AppRole = "admin" | "sales_rep" | "manager" | "super_admin";
 
 interface AuthContextType {
   user: User | null;
@@ -12,6 +12,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isManager: boolean;
   isSalesRep: boolean;
+  isSuperAdmin: boolean;
   isPasswordRecovery: boolean;
   signOut: () => Promise<void>;
 }
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isManager: false,
   isSalesRep: false,
+  isSuperAdmin: false,
   isPasswordRecovery: false,
   signOut: async () => {},
 });
@@ -86,12 +88,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = userRole === "admin";
+  const isAdmin = userRole === "admin" || userRole === "super_admin";
   const isManager = userRole === "manager";
   const isSalesRep = userRole === "sales_rep";
+  const isSuperAdmin = userRole === "super_admin";
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, userRole, isAdmin, isManager, isSalesRep, isPasswordRecovery, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, userRole, isAdmin, isManager, isSalesRep, isSuperAdmin, isPasswordRecovery, signOut }}>
       {children}
     </AuthContext.Provider>
   );

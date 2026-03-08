@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
@@ -154,9 +155,10 @@ export function useContactSubmissions() {
 
 export function useCreateLead() {
   const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   return useMutation({
     mutationFn: async (lead: LeadInsert) => {
-      const { data, error } = await supabase.from("leads").insert(lead).select().single();
+      const { data, error } = await supabase.from("leads").insert({ ...lead, org_id: orgId } as any).select().single();
       if (error) throw error;
       return data;
     },
@@ -200,9 +202,10 @@ export function useDeleteLead() {
 
 export function useCreateFollowUpBooking() {
   const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   return useMutation({
     mutationFn: async (booking: Omit<FollowUpBookingInsert, "id" | "created_at" | "updated_at" | "status">) => {
-      const { data, error } = await supabase.from("follow_up_bookings").insert(booking).select().single();
+      const { data, error } = await supabase.from("follow_up_bookings").insert({ ...booking, org_id: orgId } as any).select().single();
       if (error) throw error;
       return data;
     },
@@ -267,9 +270,10 @@ export function useUpcomingFollowUps() {
 
 export function useCreateEvent() {
   const queryClient = useQueryClient();
+  const { orgId } = useOrg();
   return useMutation({
     mutationFn: async (event: EventInsert) => {
-      const { data, error } = await supabase.from("events").insert(event).select().single();
+      const { data, error } = await supabase.from("events").insert({ ...event, org_id: orgId } as any).select().single();
       if (error) throw error;
       return data;
     },
