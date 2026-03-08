@@ -212,6 +212,9 @@ const LeadsPage = () => {
               <SelectItem value="cold">Cold</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
+            <Download className="mr-1.5 h-4 w-4" /> Export
+          </Button>
           <Button onClick={() => setCaptureOpen(true)} size="sm">
             <Plus className="mr-1.5 h-4 w-4" /> Capture
           </Button>
