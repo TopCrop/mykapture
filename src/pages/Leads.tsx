@@ -187,6 +187,24 @@ const LeadsPage = () => {
     return matchesSearch && matchesClass;
   });
 
+  const exportCsv = () => {
+    const headers = ["Name", "Title", "Company", "Email", "Phone", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured At"];
+    const rows = filtered.map((l) => [
+      l.name, l.title || "", l.company || "", l.email || "", l.phone || "",
+      l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
+      l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
+      new Date(l.created_at).toLocaleString(),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const bantLabels: Record<string, string> = {
     confirmed: "Confirmed", exploring: "Exploring", no_budget: "No Budget",
     decision_maker: "Decision Maker", influencer: "Influencer", researcher: "Researcher",
