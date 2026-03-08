@@ -63,7 +63,7 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div>
-              <h2 className="text-sm font-bold text-sidebar-foreground tracking-tight">LeadCapture</h2>
+              <h2 className="text-sm font-bold text-sidebar-foreground tracking-tight">Kapture</h2>
               <p className="text-[10px] text-muted-foreground">Conference Edition</p>
             </div>
           )}
