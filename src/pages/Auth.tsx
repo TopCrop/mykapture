@@ -43,16 +43,20 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       } else if (view === "signup") {
+        if (!getPasswordStrength(password)) {
+          toast.error("Please meet all password requirements.");
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + "/auth",
           },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account.");
+        setSignupSuccess(true);
       }
     } catch (error: any) {
       toast.error(error.message);
