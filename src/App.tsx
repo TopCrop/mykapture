@@ -15,6 +15,7 @@ import DocumentationPage from "./pages/Documentation";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import BrandGuidelines from "./pages/BrandGuidelines";
 import { useEffect } from "react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
