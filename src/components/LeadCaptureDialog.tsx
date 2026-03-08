@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore } from "@/hooks/useData";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClassificationBadge } from "@/components/LeadBadges";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import { VoiceNoteRecorder } from "@/components/VoiceNoteRecorder";
-import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Pencil } from "lucide-react";
+import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Pencil, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [website, setWebsite] = useState("");
 
   // BANT
   const [budget, setBudget] = useState("");
@@ -75,33 +76,44 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     captured_by_name?: string;
   } | null>(null);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const checkDuplicate = useCallback(async (emailVal: string, phoneVal: string, eventVal: string) => {
+  // Debounced duplicate check (#3)
+  const checkDuplicate = useCallback((emailVal: string, phoneVal: string, eventVal: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!user || !eventVal || (!emailVal && !phoneVal)) {
       setDuplicateInfo(null);
       return;
     }
-    setCheckingDuplicate(true);
-    try {
-      const { data, error } = await supabase.rpc("check_duplicate_lead", {
-        _email: emailVal || "",
-        _phone: phoneVal || "",
-        _event_id: eventVal,
-        _current_user_id: user.id,
-      });
-      if (!error && data) {
-        setDuplicateInfo(data as any);
-      } else {
+    debounceRef.current = setTimeout(async () => {
+      setCheckingDuplicate(true);
+      try {
+        const { data, error } = await supabase.rpc("check_duplicate_lead", {
+          _email: emailVal || "",
+          _phone: phoneVal || "",
+          _event_id: eventVal,
+          _current_user_id: user.id,
+        });
+        if (!error && data) {
+          setDuplicateInfo(data as any);
+        } else {
+          setDuplicateInfo(null);
+        }
+      } catch {
         setDuplicateInfo(null);
+      } finally {
+        setCheckingDuplicate(false);
       }
-    } catch {
-      setDuplicateInfo(null);
-    } finally {
-      setCheckingDuplicate(false);
-    }
+    }, 500);
   }, [user]);
 
-  // Trigger duplicate check when email, phone, or event changes
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   const handleEmailChange = (val: string) => {
     setEmail(val);
     checkDuplicate(val, phone, eventId);
@@ -131,7 +143,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const resetForm = () => {
     setStep(1);
     setCaptureMode(mode);
-    setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone("");
+    setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone(""); setWebsite("");
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
     setDuplicateInfo(null);
@@ -140,13 +152,19 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setMeetingType("call"); setBookFollowUp(false);
   };
 
+  // Card scan triggers duplicate check (#4)
   const handleCardScanned = (contact: { name?: string; title?: string; company?: string; email?: string; phone?: string; website?: string }) => {
     if (contact.name) setName(contact.name);
     if (contact.title) setTitle(contact.title);
     if (contact.company) setCompany(contact.company);
+    const scannedEmail = contact.email || email;
+    const scannedPhone = contact.phone || phone;
     if (contact.email) setEmail(contact.email);
     if (contact.phone) setPhone(contact.phone);
+    if (contact.website) setWebsite(contact.website);
     toast.success("Contact info filled from business card!");
+    // Trigger duplicate check with scanned values
+    checkDuplicate(scannedEmail, scannedPhone, eventId);
   };
 
   const handleVoiceTranscribed = (result: { transcription: string; extracted_name?: string; extracted_company?: string; extracted_needs?: string; summary?: string }, url: string) => {
@@ -170,6 +188,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       company: company || null,
       email: email || null,
       phone: phone || null,
+      website: website || null,
       bant_budget: budget || null,
       bant_authority: authority || null,
       bant_need: needs.length > 0 ? needs : null,
@@ -184,7 +203,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       captured_by: user.id,
     };
 
-    // Offline support
     if (!navigator.onLine) {
       queueLeadOffline(leadData);
       toast.success("Lead saved offline! Will sync when connected.");
@@ -235,7 +253,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 `Capture New Lead — Step ${step}/3`
               )}
             </DialogTitle>
-            {/* Mode toggle */}
             {step === 1 && (
               <div className="flex gap-1 mt-1">
                 <Button
@@ -258,7 +275,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
             )}
           </DialogHeader>
 
-          {/* QUICK MODE: single step */}
+          {/* QUICK MODE */}
           {isQuickMode && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -283,7 +300,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
               </div>
 
-              {/* Voice Note */}
               <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note (optional)</Label>
                 <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
@@ -299,7 +315,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Key takeaway..." rows={2} />
               </div>
 
-              {/* Duplicate warning */}
               {duplicateInfo?.is_duplicate && (
                 <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
@@ -331,7 +346,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
             </div>
           )}
 
-          {/* FULL MODE: 3 steps */}
+          {/* FULL MODE: Step 1 */}
           {!isQuickMode && step === 1 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -362,6 +377,10 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                   <Label className="text-xs">Phone</Label>
                   <Input value={phone} onChange={(e) => handlePhoneChange(e.target.value)} placeholder="+1-555-0101" />
                 </div>
+                <div className="col-span-2 space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1"><Globe className="h-3 w-3" /> Website</Label>
+                  <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://techcorp.com" />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Event</Label>
@@ -375,7 +394,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </Select>
               </div>
 
-              {/* Voice Note */}
               <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note</Label>
                 <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
@@ -386,7 +404,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 )}
               </div>
 
-              {/* Duplicate warning */}
               {duplicateInfo?.is_duplicate && (
                 <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-600">
                   <AlertTriangle className="h-4 w-4" />
@@ -477,7 +494,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
               </div>
 
-              {/* Calendar Booking */}
               <div className="border-t pt-3 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Checkbox checked={bookFollowUp} onCheckedChange={(c) => setBookFollowUp(!!c)} />
@@ -612,6 +628,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               <div className="text-xs text-muted-foreground space-y-1 border-t pt-3">
                 <p><strong>Contact:</strong> {name} {title && `(${title})`} {company && `at ${company}`}</p>
                 {email && <p><strong>Email:</strong> {email}</p>}
+                {website && <p><strong>Website:</strong> {website}</p>}
                 {budget && <p><strong>Budget:</strong> {budget.replace("_", " ")}</p>}
                 {authority && <p><strong>Authority:</strong> {authority.replace("_", " ")}</p>}
                 {needs.length > 0 && <p><strong>Needs:</strong> {needs.join(", ")}</p>}

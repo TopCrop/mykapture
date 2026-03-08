@@ -32,7 +32,6 @@ const SettingsPage = () => {
     }
   };
 
-  // Count leads per user
   const leadsPerUser = useMemo(() => {
     const map = new Map<string, number>();
     leads.forEach((l) => {
@@ -78,7 +77,7 @@ const SettingsPage = () => {
                       <thead>
                         <tr className="border-b border-border text-left">
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Email</th>
+                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Phone</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Team</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Territory</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Role</th>
