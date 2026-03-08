@@ -119,15 +119,17 @@ const Index = () => {
     { name: "Cold", value: displayLeads.filter((l) => l.classification === "cold").length, color: "hsl(210, 80%, 56%)" },
   ];
 
-  const repMap = new Map<string, { name: string; count: number }>();
-  leads.forEach((l) => {
-    const profile = profiles.find((p) => p.user_id === l.captured_by);
-    const repName = profile?.display_name || "Unknown";
-    const existing = repMap.get(l.captured_by);
-    if (existing) existing.count++;
-    else repMap.set(l.captured_by, { name: repName, count: 1 });
-  });
-  const repData = Array.from(repMap.values()).map((r) => ({ name: r.name, leads: r.count }));
+  const repData = useMemo(() => {
+    const map = new Map<string, { name: string; count: number }>();
+    leads.forEach((l) => {
+      const profile = profiles.find((p) => p.user_id === l.captured_by);
+      const repName = profile?.display_name || "Unknown";
+      const existing = map.get(l.captured_by);
+      if (existing) existing.count++;
+      else map.set(l.captured_by, { name: repName, count: 1 });
+    });
+    return Array.from(map.values()).map((r) => ({ name: r.name, leads: r.count }));
+  }, [leads, profiles]);
 
   return (
     <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"}>
