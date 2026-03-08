@@ -53,6 +53,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, userRole, signOut } = useAuth();
+  const { org } = useOrg();
   const isActive = (path: string) => location.pathname === path;
   const { data: userProfile } = useMyProfile();
   const avatarUrl = userProfile?.avatar_url;
