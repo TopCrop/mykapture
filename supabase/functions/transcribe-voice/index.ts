@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, format = "wav" } = await req.json();
+    const { audioBase64, format = "webm" } = await req.json();
     if (!audioBase64) {
       return new Response(JSON.stringify({ error: "No audio provided" }), {
         status: 400,
