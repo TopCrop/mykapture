@@ -1,0 +1,132 @@
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { UserPlus, Copy, Check, Loader2, X, Clock } from "lucide-react";
+import { useCreateInvitation, useInvitations, useDeleteInvitation } from "@/hooks/useData";
+import { useOrg } from "@/hooks/useOrg";
+import { toast } from "sonner";
+
+export function InviteTeamDialog() {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const { orgId } = useOrg();
+  const createInvitation = useCreateInvitation();
+  const { data: invitations = [] } = useInvitations();
+  const deleteInvitation = useDeleteInvitation();
+
+  const pendingInvitations = invitations.filter((i) => i.status === "pending");
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !orgId) return;
+
+    try {
+      await createInvitation.mutateAsync({ email: email.toLowerCase(), org_id: orgId });
+      const link = `${window.location.origin}/auth?invite=${orgId}`;
+      setInviteLink(link);
+      toast.success(`Invitation created for ${email}`);
+      setEmail("");
+    } catch (error: any) {
+      if (error.message?.includes("duplicate")) {
+        toast.error("This email has already been invited.");
+      } else {
+        toast.error(error.message || "Failed to create invitation");
+      }
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    toast.success("Link copied to clipboard");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCancel = async (id: string) => {
+    try {
+      await deleteInvitation.mutateAsync(id);
+      toast.success("Invitation cancelled");
+    } catch {
+      toast.error("Failed to cancel invitation");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setInviteLink(null); setEmail(""); } }}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="gap-1.5">
+          <UserPlus className="h-3.5 w-3.5" />
+          Invite Member
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Invite Team Member</DialogTitle>
+        </DialogHeader>
+
+        <form onSubmit={handleInvite} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="invite-email" className="text-xs">Email Address</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="colleague@company.com"
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={createInvitation.isPending || !email}>
+            {createInvitation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+            Send Invitation
+          </Button>
+        </form>
+
+        {inviteLink && (
+          <div className="space-y-2 pt-2">
+            <Label className="text-xs text-muted-foreground">Share this signup link with your team member:</Label>
+            <div className="flex gap-2">
+              <Input value={inviteLink} readOnly className="text-xs font-mono" />
+              <Button variant="outline" size="icon" onClick={handleCopy}>
+                {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {pendingInvitations.length > 0 && (
+          <div className="space-y-2 pt-3 border-t border-border">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Pending Invitations ({pendingInvitations.length})
+            </h4>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              {pendingInvitations.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between rounded-md bg-secondary/30 px-3 py-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-xs truncate">{inv.email}</span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">Pending</Badge>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 shrink-0"
+                    onClick={() => handleCancel(inv.id)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

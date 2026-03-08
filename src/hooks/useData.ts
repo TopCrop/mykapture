@@ -315,6 +315,56 @@ export function useDeleteEvent() {
   });
 }
 
+// Invitations hooks
+export function useInvitations() {
+  const { isAdmin } = useAuth();
+  return useQuery({
+    queryKey: ["invitations"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invitations")
+        .select("id,email,status,created_at,expires_at,org_id,invited_by")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin,
+    ...CACHE_DEFAULTS,
+  });
+}
+
+export function useCreateInvitation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async ({ email, org_id }: { email: string; org_id: string }) => {
+      const { data, error } = await supabase
+        .from("invitations")
+        .insert({ email, org_id, invited_by: user!.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
+    },
+  });
+}
+
+export function useDeleteInvitation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("invitations").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invitations"] });
+    },
+  });
+}
+
 // Lead scoring logic
 export function calculateLeadScore(lead: {
   title?: string | null;

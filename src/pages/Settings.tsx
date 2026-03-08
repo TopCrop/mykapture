@@ -71,8 +71,9 @@ const SettingsPage = () => {
             </TabsContent>
             <TabsContent value="team">
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
-                <div className="p-5 pb-3">
+                <div className="p-5 pb-3 flex items-center justify-between">
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Team Members ({profiles.length})</h3>
+                  <InviteTeamDialog />
                 </div>
                 <div className="mx-5 brand-line" />
                 {profiles.length === 0 ? (

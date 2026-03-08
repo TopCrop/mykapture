@@ -186,6 +186,15 @@ const AuthPage = () => {
           </div>
         </div>
 
+        {inviteOrgId && orgName && (
+          <div className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <Users className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-sm text-foreground">
+              You've been invited to join <span className="font-semibold text-primary">{orgName}</span>
+            </p>
+          </div>
+        )}
+
         <div className="glass-card-elevated p-6 space-y-5">
           {signupSuccess ? (
             <div className="text-center space-y-4 py-4">
