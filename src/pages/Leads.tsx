@@ -370,7 +370,7 @@ const LeadsPage = () => {
   };
 
   return (
-    <DashboardLayout title="Leads" subtitle={`${filtered.length} ${isSalesRep ? "my " : ""}leads captured`}>
+    <DashboardLayout title="Leads" subtitle={`${filtered.length} ${isSalesRep ? "my " : ""}leads captured${totalPages > 1 ? ` · Page ${safeCurrentPage}/${totalPages}` : ""}`}>
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
