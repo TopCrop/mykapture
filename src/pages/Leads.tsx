@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { LeadClassification, SyncStatus } from "@/types/lead";
 import type { Database } from "@/integrations/supabase/types";
@@ -33,24 +34,18 @@ function FollowUpEmailButton({ lead }: { lead: LeadRow }) {
     }
     setSending(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-follow-up`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ leadId: lead.id }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke("send-follow-up", {
+        body: { leadId: lead.id },
+      });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to send");
+      if (error) {
+        throw new Error(error.message || "Failed to send");
       }
 
-      const data = await response.json();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
       setEmailPreview(data.email);
       setSent(true);
       toast.success("Follow-up email generated!");
