@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Mail, Loader2, Check } from "lucide-react";
+import { Search, Filter, Plus, Mail, Loader2, Check, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -187,6 +187,24 @@ const LeadsPage = () => {
     return matchesSearch && matchesClass;
   });
 
+  const exportCsv = () => {
+    const headers = ["Name", "Title", "Company", "Email", "Phone", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured At"];
+    const rows = filtered.map((l) => [
+      l.name, l.title || "", l.company || "", l.email || "", l.phone || "",
+      l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
+      l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
+      new Date(l.created_at).toLocaleString(),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const bantLabels: Record<string, string> = {
     confirmed: "Confirmed", exploring: "Exploring", no_budget: "No Budget",
     decision_maker: "Decision Maker", influencer: "Influencer", researcher: "Researcher",
@@ -212,6 +230,9 @@ const LeadsPage = () => {
               <SelectItem value="cold">Cold</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0}>
+            <Download className="mr-1.5 h-4 w-4" /> Export
+          </Button>
           <Button onClick={() => setCaptureOpen(true)} size="sm">
             <Plus className="mr-1.5 h-4 w-4" /> Capture
           </Button>
