@@ -1,0 +1,31 @@
+-- RPC for super admin to get org stats (bypasses RLS via SECURITY DEFINER)
+CREATE OR REPLACE FUNCTION public.get_all_org_stats()
+RETURNS TABLE (
+  org_id uuid,
+  org_name text,
+  org_domain text,
+  org_created_at timestamptz,
+  member_count bigint,
+  lead_count bigint
+)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT
+    o.id AS org_id,
+    o.name AS org_name,
+    o.domain AS org_domain,
+    o.created_at AS org_created_at,
+    COALESCE(m.cnt, 0) AS member_count,
+    COALESCE(l.cnt, 0) AS lead_count
+  FROM public.organizations o
+  LEFT JOIN (
+    SELECT org_id, count(*) AS cnt FROM public.org_members GROUP BY org_id
+  ) m ON m.org_id = o.id
+  LEFT JOIN (
+    SELECT org_id, count(*) AS cnt FROM public.leads GROUP BY org_id
+  ) l ON l.org_id = o.id
+  ORDER BY o.created_at DESC
+$$;

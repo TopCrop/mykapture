@@ -426,6 +426,17 @@ export type Database = {
         }
         Returns: Json
       }
+      get_all_org_stats: {
+        Args: never
+        Returns: {
+          lead_count: number
+          member_count: number
+          org_created_at: string
+          org_domain: string
+          org_id: string
+          org_name: string
+        }[]
+      }
       get_user_org_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
