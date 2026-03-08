@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents, useProfiles, useContactSubmissions, useFollowUpBookings } from "@/hooks/useData";
+import { useLeads, useEvents, useProfiles, useContactSubmissions, useFollowUpBookings, useMyProfile } from "@/hooks/useData";
 import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus, Mail, UserCheck, Search, Filter, X, Rocket, CalendarPlus, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -391,7 +391,7 @@ const Index = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLeads.slice(0, 10).map((lead) => (
+                  {filteredLeads.slice(0, 10).map((lead, idx) => (
                     <tr
                       key={lead.id}
                       className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer"
@@ -418,6 +418,11 @@ const Index = () => {
                   ))}
                 </tbody>
               </table>
+              <div className="px-5 py-2.5 border-t border-border">
+                <p className="text-[11px] text-muted-foreground">
+                  Showing {Math.min(10, filteredLeads.length)} of {filteredLeads.length} leads
+                </p>
+              </div>
             </div>
           )}
         </motion.div>

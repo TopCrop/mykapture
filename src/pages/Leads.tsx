@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents, useDeleteLead } from "@/hooks/useData";
+import { useLeads, useEvents, useDeleteLead, useProfiles } from "@/hooks/useData";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -110,6 +110,7 @@ const LEADS_PER_PAGE = 25;
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
+  const { data: profiles = [] } = useProfiles();
   const { user, isSalesRep, isAdmin } = useAuth();
   const deleteLead = useDeleteLead();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -128,6 +129,15 @@ const LeadsPage = () => {
     events.forEach((e) => map.set(e.id, e.name));
     return map;
   }, [events]);
+
+  // Build unique reps list for filter
+  const uniqueReps = useMemo(() => {
+    const repIds = [...new Set(leads.map((l) => l.captured_by))];
+    return repIds.map((id) => {
+      const profile = profiles.find((p) => p.user_id === id);
+      return { id, name: profile?.display_name || "Unknown" };
+    });
+  }, [leads, profiles]);
 
   useEffect(() => {
     const classification = searchParams.get("classification");
@@ -246,6 +256,20 @@ const LeadsPage = () => {
               ))}
             </SelectContent>
           </Select>
+          {isAdmin && (
+            <Select value={repFilter} onValueChange={(v) => { setRepFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Rep" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Reps</SelectItem>
+                {uniqueReps.map((rep) => (
+                  <SelectItem key={rep.id} value={rep.id}>{rep.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="gap-1.5 hover:bg-secondary">
             <Download className="h-4 w-4" /> Export
           </Button>
