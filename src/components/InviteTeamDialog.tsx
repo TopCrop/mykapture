@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { UserPlus, Copy, Check, Loader2, X, Clock, RefreshCw, AlertTriangle } from "lucide-react";
 import { useCreateInvitation, useInvitations, useDeleteInvitation, useResendInvitation } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 function isExpired(expiresAt: string): boolean {
@@ -18,7 +19,7 @@ export function InviteTeamDialog() {
   const [email, setEmail] = useState("");
   const [copied, setCopied] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const { orgId } = useOrg();
+  const { orgId, org } = useOrg();
   const createInvitation = useCreateInvitation();
   const { data: invitations = [] } = useInvitations();
   const deleteInvitation = useDeleteInvitation();
@@ -37,7 +38,15 @@ export function InviteTeamDialog() {
       await createInvitation.mutateAsync({ email: email.toLowerCase(), org_id: orgId });
       const link = `${window.location.origin}/auth?invite=${orgId}`;
       setInviteLink(link);
-      toast.success(`Invitation created for ${email}`);
+
+      // Send invitation email (fire-and-forget, don't block UI)
+      supabase.functions.invoke("send-invite-email", {
+        body: { email: email.toLowerCase(), org_name: org?.name || "your team", invite_url: link },
+      }).then(({ error }) => {
+        if (error) console.error("Failed to send invite email:", error);
+      });
+
+      toast.success(`Invitation sent to ${email}`);
       setEmail("");
     } catch (error: any) {
       if (error.message?.includes("duplicate")) {
@@ -65,9 +74,18 @@ export function InviteTeamDialog() {
     }
   };
 
-  const handleResend = async (id: string) => {
+  const handleResend = async (id: string, invEmail: string) => {
     try {
       await resendInvitation.mutateAsync(id);
+      const link = `${window.location.origin}/auth?invite=${orgId}`;
+
+      // Re-send email too
+      supabase.functions.invoke("send-invite-email", {
+        body: { email: invEmail, org_name: org?.name || "your team", invite_url: link },
+      }).then(({ error }) => {
+        if (error) console.error("Failed to resend invite email:", error);
+      });
+
       toast.success("Invitation resent — link is active again for 7 days");
     } catch {
       toast.error("Failed to resend invitation");
@@ -152,7 +170,7 @@ export function InviteTeamDialog() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => handleResend(inv.id)}
+                      onClick={() => handleResend(inv.id, inv.email)}
                       disabled={resendInvitation.isPending}
                       title="Resend invitation"
                     >
