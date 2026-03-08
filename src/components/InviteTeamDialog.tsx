@@ -38,7 +38,15 @@ export function InviteTeamDialog() {
       await createInvitation.mutateAsync({ email: email.toLowerCase(), org_id: orgId });
       const link = `${window.location.origin}/auth?invite=${orgId}`;
       setInviteLink(link);
-      toast.success(`Invitation created for ${email}`);
+
+      // Send invitation email (fire-and-forget, don't block UI)
+      supabase.functions.invoke("send-invite-email", {
+        body: { email: email.toLowerCase(), org_name: org?.name || "your team", invite_url: link },
+      }).then(({ error }) => {
+        if (error) console.error("Failed to send invite email:", error);
+      });
+
+      toast.success(`Invitation sent to ${email}`);
       setEmail("");
     } catch (error: any) {
       if (error.message?.includes("duplicate")) {
