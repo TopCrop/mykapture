@@ -185,8 +185,8 @@ const Index = () => {
   const [filterLocation, setFilterLocation] = useState<string>("all");
   const [filterClassification, setFilterClassification] = useState<string>("all");
 
-  // For sales reps, filter to only their own leads
-  const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
+  // RLS handles visibility — sales reps only see their own leads from the DB
+  const displayLeads = leads;
 
   // Build event lookup
   const eventMap = useMemo(() => {

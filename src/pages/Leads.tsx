@@ -443,8 +443,8 @@ const LeadsPage = () => {
     setSearchParams({});
   };
 
-  // Sales reps only see their own leads
-  const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
+  // RLS handles visibility — sales reps only see their own leads from the DB
+  const displayLeads = leads;
 
   const filtered = displayLeads.filter((lead) => {
     const matchesSearch = !search || lead.name.toLowerCase().includes(search.toLowerCase()) || (lead.company || "").toLowerCase().includes(search.toLowerCase());
