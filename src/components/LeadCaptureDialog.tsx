@@ -65,7 +65,56 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [followUpTime, setFollowUpTime] = useState("10:00");
   const [followUpDuration, setFollowUpDuration] = useState("30");
   const [meetingType, setMeetingType] = useState("call");
-  const [bookFollowUp, setBookFollowUp] = useState(false);
+
+  // Duplicate detection
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    is_duplicate: boolean;
+    is_own?: boolean;
+    lead_id?: string;
+    lead_name?: string;
+    captured_by_name?: string;
+  } | null>(null);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+
+  const checkDuplicate = useCallback(async (emailVal: string, phoneVal: string, eventVal: string) => {
+    if (!user || !eventVal || (!emailVal && !phoneVal)) {
+      setDuplicateInfo(null);
+      return;
+    }
+    setCheckingDuplicate(true);
+    try {
+      const { data, error } = await supabase.rpc("check_duplicate_lead", {
+        _email: emailVal || "",
+        _phone: phoneVal || "",
+        _event_id: eventVal,
+        _current_user_id: user.id,
+      });
+      if (!error && data) {
+        setDuplicateInfo(data as any);
+      } else {
+        setDuplicateInfo(null);
+      }
+    } catch {
+      setDuplicateInfo(null);
+    } finally {
+      setCheckingDuplicate(false);
+    }
+  }, [user]);
+
+  // Trigger duplicate check when email, phone, or event changes
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    checkDuplicate(val, phone, eventId);
+  };
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    checkDuplicate(email, val, eventId);
+  };
+  const handleEventChange = (val: string) => {
+    setEventId(val);
+    checkDuplicate(email, phone, val);
+  };
+
 
   const scoring = calculateLeadScore({
     title,
