@@ -419,8 +419,17 @@ const LeadsPage = () => {
                       <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                       <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                       <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
-                      <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 gap-1 text-xs hover:bg-secondary hover:text-primary"
+                            onClick={() => setSelectedLead(lead)}
+                            title="View / Edit lead"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
                           <FollowUpEmailButton lead={lead} />
                           {isAdmin && (
                             <AlertDialog>
