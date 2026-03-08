@@ -37,7 +37,7 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout title="Settings" subtitle="System configuration">
-      <Tabs defaultValue={isAdmin ? "team" : "integrations"} className="space-y-4">
+      <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
           {isAdmin && (
             <>
