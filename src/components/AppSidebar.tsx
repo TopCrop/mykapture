@@ -34,7 +34,7 @@ const allMainItems = [
 
 const allSettingsItems = [
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin"] },
-  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin", "manager", "sales_rep"] },
+  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin"] },
 ];
 
 export function AppSidebar() {
