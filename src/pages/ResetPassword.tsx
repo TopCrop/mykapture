@@ -68,8 +68,8 @@ const ResetPassword = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Determine if we're in recovery mode from either PKCE verification or implicit flow event
-  const canReset = isPasswordRecovery || (ready && user != null && window.location.hash.includes("type=recovery"));
+  // Determine if we're in recovery mode from PKCE, implicit flow event, or session set
+  const canReset = isPasswordRecovery || (ready && user != null);
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
