@@ -281,6 +281,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_duplicate_lead: {
+        Args: {
+          _current_user_id: string
+          _email: string
+          _event_id: string
+          _phone: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
