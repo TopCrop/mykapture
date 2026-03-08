@@ -236,8 +236,19 @@ const AuthPage = () => {
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
+                  <Label htmlFor="email" className="text-xs">{view === "signup" ? "Work Email" : "Email"}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder={view === "signup" ? "you@yourcompany.com" : "you@company.com"}
+                    required
+                    className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
+                  />
+                  {emailError && view === "signup" && (
+                    <p className="text-[11px] text-destructive mt-1">{emailError}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
