@@ -6,7 +6,7 @@ import {
   Settings,
   FileText,
   LogOut,
-} from "lucide-react";
+import { useProfiles } from "@/hooks/useData";
 import { NavLink } from "@/components/NavLink";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation, useNavigate } from "react-router-dom";
