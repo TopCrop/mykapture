@@ -12,6 +12,7 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
 import type { AppRole } from "@/hooks/useAuth";
 import { useMemo } from "react";
+import { InviteTeamDialog } from "@/components/InviteTeamDialog";
 
 const SettingsPage = () => {
   const { isAdmin, isSuperAdmin, user } = useAuth();
