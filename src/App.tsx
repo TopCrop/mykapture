@@ -10,6 +10,7 @@ import LeadsPage from "./pages/Leads";
 import EventsPage from "./pages/Events";
 import AnalyticsPage from "./pages/Analytics";
 import SettingsPage from "./pages/Settings";
+import DocumentationPage from "./pages/Documentation";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
