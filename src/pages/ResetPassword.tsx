@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,66 +11,39 @@ import { useNavigate } from "react-router-dom";
 import { PasswordStrengthIndicator, getPasswordStrength } from "@/components/PasswordStrengthIndicator";
 
 const ResetPassword = () => {
+  const { isPasswordRecovery, user } = useAuth();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [verifying, setVerifying] = useState(true);
   const [success, setSuccess] = useState(false);
-  const [isRecovery, setIsRecovery] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [ready, setReady] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const handleRecovery = async () => {
-      // Check URL hash for implicit flow (type=recovery in hash)
-      const hash = window.location.hash;
-      if (hash.includes("type=recovery")) {
-        setIsRecovery(true);
-        setVerifying(false);
-        return;
-      }
+    // Check URL search params for PKCE flow
+    const params = new URLSearchParams(window.location.search);
+    const tokenHash = params.get("token_hash");
+    const type = params.get("type");
 
-      // Check URL search params for PKCE flow (token_hash & type in query)
-      const params = new URLSearchParams(window.location.search);
-      const tokenHash = params.get("token_hash");
-      const type = params.get("type");
-
-      if (tokenHash && type === "recovery") {
-        try {
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: "recovery",
-          });
-          if (error) {
-            toast.error("Reset link is invalid or has expired. Please request a new one.");
-            setVerifying(false);
-            return;
-          }
-          setIsRecovery(true);
-        } catch {
-          toast.error("Failed to verify reset link.");
+    if (tokenHash && type === "recovery") {
+      supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).then(({ error }) => {
+        if (error) {
+          toast.error("Reset link is invalid or has expired. Please request a new one.");
         }
-        setVerifying(false);
-        return;
-      }
-
-      // Listen for PASSWORD_RECOVERY event (fallback)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setIsRecovery(true);
-          setVerifying(false);
-        }
+        setReady(true);
       });
+      return;
+    }
 
-      // Give the auth state change a moment to fire
-      setTimeout(() => setVerifying(false), 2000);
-
-      return () => subscription.unsubscribe();
-    };
-
-    handleRecovery();
+    // For implicit flow, give onAuthStateChange time to fire PASSWORD_RECOVERY
+    const timer = setTimeout(() => setReady(true), 1500);
+    return () => clearTimeout(timer);
   }, []);
+
+  // Determine if we're in recovery mode from either PKCE verification or implicit flow event
+  const canReset = isPasswordRecovery || (ready && user != null && window.location.hash.includes("type=recovery"));
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,7 +89,7 @@ const ResetPassword = () => {
           </p>
         </div>
 
-        {verifying ? (
+        {!ready ? (
           <div className="flex flex-col items-center gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">Verifying reset link...</p>
@@ -125,16 +99,7 @@ const ResetPassword = () => {
             <CheckCircle className="h-12 w-12 text-emerald-500" />
             <p className="text-sm text-muted-foreground">Redirecting to sign in...</p>
           </div>
-        ) : !isRecovery ? (
-          <div className="text-center space-y-3">
-            <p className="text-sm text-muted-foreground">
-              This link is invalid or has expired. Please request a new password reset.
-            </p>
-            <Button variant="outline" onClick={() => navigate("/auth")}>
-              Go to Sign In
-            </Button>
-          </div>
-        ) : (
+        ) : canReset ? (
           <form onSubmit={handleReset} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="new-password" className="text-xs">New Password</Label>
@@ -160,6 +125,15 @@ const ResetPassword = () => {
               Update Password
             </Button>
           </form>
+        ) : (
+          <div className="text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This link is invalid or has expired. Please request a new password reset.
+            </p>
+            <Button variant="outline" onClick={() => navigate("/auth")}>
+              Go to Sign In
+            </Button>
+          </div>
         )}
       </motion.div>
     </div>
