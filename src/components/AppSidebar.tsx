@@ -7,7 +7,7 @@ import {
   FileText,
   LogOut,
 } from "lucide-react";
-import { useProfiles } from "@/hooks/useData";
+import { useMyProfile } from "@/hooks/useData";
 import { NavLink } from "@/components/NavLink";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -52,8 +52,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user, userRole, signOut } = useAuth();
   const isActive = (path: string) => location.pathname === path;
-  const { data: profiles = [] } = useProfiles();
-  const userProfile = profiles.find((p: any) => p.user_id === user?.id);
+  const { data: userProfile } = useMyProfile();
   const avatarUrl = userProfile?.avatar_url;
   const displayName = userProfile?.display_name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -65,7 +64,6 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="p-4 relative overflow-hidden">
-        {/* Geometric corner accent */}
         <div className="absolute top-0 right-0 w-16 h-16 opacity-10">
           <svg viewBox="0 0 64 64" fill="none" className="w-full h-full">
             <path d="M64 0 L64 64 L0 64" stroke="hsl(168, 80%, 48%)" strokeWidth="1" />
@@ -114,7 +112,6 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Decorative separator */}
         <div className="px-4">
           <div className="brand-line" />
         </div>

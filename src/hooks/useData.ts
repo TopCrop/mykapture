@@ -12,10 +12,10 @@ type EventUpdate = Database["public"]["Tables"]["events"]["Update"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type FollowUpBookingInsert = Database["public"]["Tables"]["follow_up_bookings"]["Insert"];
 type FollowUpBookingRow = Database["public"]["Tables"]["follow_up_bookings"]["Row"];
+type FollowUpBookingUpdate = Database["public"]["Tables"]["follow_up_bookings"]["Update"];
 type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
 
-// Shared cache config: avoid re-fetching within 2 minutes, keep stale data for 10 min
 const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000, gcTime: 10 * 60 * 1000 } as const;
 
 export function useLeads() {
@@ -77,7 +77,7 @@ export function useMyProfile() {
       return data as ProfileRow;
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // Profile rarely changes
+    staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
   });
 }
@@ -212,6 +212,25 @@ export function useCreateFollowUpBooking() {
   });
 }
 
+export function useUpdateFollowUpBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string } & Partial<FollowUpBookingUpdate>) => {
+      const { data, error } = await supabase
+        .from("follow_up_bookings")
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["follow_up_bookings"] });
+    },
+  });
+}
+
 export function useFollowUpBookings(leadId?: string) {
   return useQuery({
     queryKey: ["follow_up_bookings", leadId],
@@ -242,7 +261,7 @@ export function useUpcomingFollowUps() {
     },
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
-    refetchInterval: 5 * 60 * 1000, // 5 min instead of 1 min
+    refetchInterval: 5 * 60 * 1000,
   });
 }
 

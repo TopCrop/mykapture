@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useEvents, useLeads, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@/hooks/useData";
 import { motion } from "framer-motion";
-import { MapPin, Calendar as CalendarIcon, Users, Plus, Loader2, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Calendar as CalendarIcon, Users, Plus, Loader2, Pencil, Trash2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -35,20 +35,29 @@ const EventsPage = () => {
   const [date, setDate] = useState("");
   const [status, setStatus] = useState("upcoming");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Initialize filter from URL params
   useEffect(() => {
     const statusParam = searchParams.get("status");
     if (statusParam) setStatusFilter(statusParam);
   }, [searchParams]);
 
   const filteredEvents = useMemo(() => {
-    if (statusFilter === "all") return events;
-    return events.filter((e) => e.status === statusFilter);
-  }, [events, statusFilter]);
+    let result = events;
+    if (statusFilter !== "all") result = result.filter((e) => e.status === statusFilter);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((e) =>
+        e.name.toLowerCase().includes(q) ||
+        (e.location?.toLowerCase().includes(q))
+      );
+    }
+    return result;
+  }, [events, statusFilter, searchQuery]);
 
   const clearUrlFilters = () => {
     setStatusFilter("all");
+    setSearchQuery("");
     setSearchParams({});
   };
 
@@ -72,20 +81,13 @@ const EventsPage = () => {
     try {
       if (editingEvent) {
         await updateEvent.mutateAsync({
-          id: editingEvent.id,
-          name,
-          location: location || null,
-          date: date || null,
-          status,
+          id: editingEvent.id, name,
+          location: location || null, date: date || null, status,
         });
         toast.success("Event updated!");
       } else {
         await createEvent.mutateAsync({
-          name,
-          location: location || null,
-          date: date || null,
-          status,
-          created_by: user.id,
+          name, location: location || null, date: date || null, status, created_by: user.id,
         });
         toast.success("Event created!");
       }
@@ -111,16 +113,25 @@ const EventsPage = () => {
   return (
     <DashboardLayout title="Events" subtitle="Conference management">
       <div className="space-y-4">
-        {/* Filter context banner */}
         <FilterContextBanner labels={{ status: "Status" }} onClear={clearUrlFilters} />
 
-        {!isSalesRep && (
-          <div className="flex justify-end">
+        <div className="flex flex-col sm:flex-row gap-3">
+          {/* Search bar (#11) */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search events by name or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-xs"
+            />
+          </div>
+          {!isSalesRep && (
             <Button onClick={openCreate} size="sm">
               <Plus className="mr-1.5 h-4 w-4" /> New Event
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Status filter */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -139,7 +150,7 @@ const EventsPage = () => {
 
         {filteredEvents.length === 0 ? (
           <div className="glass-card rounded-xl p-8 text-center text-sm text-muted-foreground">
-            {isLoading ? "Loading..." : statusFilter !== "all" ? `No ${statusFilter} events.` : "No events yet."}
+            {isLoading ? "Loading..." : searchQuery ? "No events match your search." : statusFilter !== "all" ? `No ${statusFilter} events.` : "No events yet."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -157,18 +168,16 @@ const EventsPage = () => {
                 >
                   <div className="flex items-start justify-between">
                     <h3 className="font-semibold text-sm">{event.name}</h3>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                          event.status === "active" && "bg-success/15 text-success",
-                          event.status === "upcoming" && "bg-primary/15 text-primary",
-                          event.status === "completed" && "bg-muted text-muted-foreground"
-                        )}
-                      >
-                        {event.status}
-                      </span>
-                    </div>
+                    <span
+                      className={cn(
+                        "text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                        event.status === "active" && "bg-success/15 text-success",
+                        event.status === "upcoming" && "bg-primary/15 text-primary",
+                        event.status === "completed" && "bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {event.status}
+                    </span>
                   </div>
                   <div className="space-y-2 text-xs text-muted-foreground">
                     {event.location && <div className="flex items-center gap-2"><MapPin className="h-3 w-3" />{event.location}</div>}
