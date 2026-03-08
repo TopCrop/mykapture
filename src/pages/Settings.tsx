@@ -55,6 +55,7 @@ const SettingsPage = () => {
           <TabsTrigger value="integrations" className="gap-1.5 text-xs"><Plug className="h-3.5 w-3.5" /> Email Integrations</TabsTrigger>
           {isAdmin && (
             <>
+              <TabsTrigger value="organization" className="gap-1.5 text-xs"><Building2 className="h-3.5 w-3.5" /> Organization</TabsTrigger>
               <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
               <TabsTrigger value="submissions" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> Contact Submissions</TabsTrigger>
               <TabsTrigger value="config" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Configuration</TabsTrigger>
