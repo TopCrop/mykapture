@@ -123,10 +123,7 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
     setTranscribing(true);
 
     try {
-      // Convert WebM → WAV for Gemini compatibility
-      const wavBlob = await convertToWav(webmBlob);
-
-      // 1. Upload original webm to storage (smaller file)
+      // 1. Upload webm to storage
       const fileName = `${user.id}/${Date.now()}.webm`;
       const { error: uploadErr } = await supabase.storage
         .from("voice-notes")
@@ -139,8 +136,8 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
 
       const voiceNoteUrl = urlData?.signedUrl || fileName;
 
-      // 2. Convert WAV to base64 for transcription
-      const arrayBuffer = await wavBlob.arrayBuffer();
+      // 2. Convert WebM directly to base64 (no WAV conversion)
+      const arrayBuffer = await webmBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
       for (let i = 0; i < uint8.length; i++) {
@@ -157,7 +154,7 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ audioBase64, format: "wav" }),
+          body: JSON.stringify({ audioBase64, format: "webm" }),
         }
       );
 
