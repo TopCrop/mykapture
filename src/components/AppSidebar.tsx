@@ -145,9 +145,13 @@ export function AppSidebar() {
               onClick={() => navigate("/settings?tab=profile")}
               className="flex w-full items-center gap-2.5 rounded-lg bg-sidebar-accent/80 border border-border p-2.5 hover:bg-sidebar-accent transition-colors cursor-pointer"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-xs font-bold text-primary border border-primary/20">
-                {initials}
-              </div>
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={displayName} className="h-8 w-8 rounded-md object-cover border border-primary/20" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-xs font-bold text-primary border border-primary/20">
+                  {initials}
+                </div>
+              )}
               <div className="flex-1 min-w-0 text-left">
                 <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
                 <p className="truncate text-[10px] text-muted-foreground">{user?.email}</p>
