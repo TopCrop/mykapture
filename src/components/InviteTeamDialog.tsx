@@ -170,7 +170,7 @@ export function InviteTeamDialog() {
                       variant="ghost"
                       size="icon"
                       className="h-6 w-6"
-                      onClick={() => handleResend(inv.id)}
+                      onClick={() => handleResend(inv.id, inv.email)}
                       disabled={resendInvitation.isPending}
                       title="Resend invitation"
                     >
