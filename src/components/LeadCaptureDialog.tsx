@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore } from "@/hooks/useData";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClassificationBadge } from "@/components/LeadBadges";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import { VoiceNoteRecorder } from "@/components/VoiceNoteRecorder";
-import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap } from "lucide-react";
+import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -63,6 +65,55 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [followUpTime, setFollowUpTime] = useState("10:00");
   const [followUpDuration, setFollowUpDuration] = useState("30");
   const [meetingType, setMeetingType] = useState("call");
+
+  // Duplicate detection
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    is_duplicate: boolean;
+    is_own?: boolean;
+    lead_id?: string;
+    lead_name?: string;
+    captured_by_name?: string;
+  } | null>(null);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+
+  const checkDuplicate = useCallback(async (emailVal: string, phoneVal: string, eventVal: string) => {
+    if (!user || !eventVal || (!emailVal && !phoneVal)) {
+      setDuplicateInfo(null);
+      return;
+    }
+    setCheckingDuplicate(true);
+    try {
+      const { data, error } = await supabase.rpc("check_duplicate_lead", {
+        _email: emailVal || "",
+        _phone: phoneVal || "",
+        _event_id: eventVal,
+        _current_user_id: user.id,
+      });
+      if (!error && data) {
+        setDuplicateInfo(data as any);
+      } else {
+        setDuplicateInfo(null);
+      }
+    } catch {
+      setDuplicateInfo(null);
+    } finally {
+      setCheckingDuplicate(false);
+    }
+  }, [user]);
+
+  // Trigger duplicate check when email, phone, or event changes
+  const handleEmailChange = (val: string) => {
+    setEmail(val);
+    checkDuplicate(val, phone, eventId);
+  };
+  const handlePhoneChange = (val: string) => {
+    setPhone(val);
+    checkDuplicate(email, val, eventId);
+  };
+  const handleEventChange = (val: string) => {
+    setEventId(val);
+    checkDuplicate(email, phone, val);
+  };
   const [bookFollowUp, setBookFollowUp] = useState(false);
 
   const scoring = calculateLeadScore({
@@ -83,6 +134,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone("");
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
+    setDuplicateInfo(null);
     setVoiceNoteUrl(""); setTranscription("");
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
     setMeetingType("call"); setBookFollowUp(false);
@@ -227,7 +279,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@techcorp.com" />
+                  <Input type="email" value={email} onChange={(e) => handleEmailChange(e.target.value)} placeholder="sarah@techcorp.com" />
                 </div>
               </div>
 
@@ -247,7 +299,28 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Key takeaway..." rows={2} />
               </div>
 
-              <Button className="w-full" onClick={handleSubmit} disabled={!name.trim() || createLead.isPending}>
+              {/* Duplicate warning */}
+              {duplicateInfo?.is_duplicate && (
+                <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    {duplicateInfo.is_own ? (
+                      <>
+                        You already captured <strong>{duplicateInfo.lead_name}</strong> at this event.{" "}
+                        <span className="underline cursor-pointer" onClick={() => { resetForm(); onClose(); }}>
+                          Edit the existing lead instead.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>{duplicateInfo.lead_name}</strong> was already captured at this event by <strong>{duplicateInfo.captured_by_name || "another team member"}</strong>. Creating a duplicate is not recommended.
+                      </>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button className="w-full" onClick={handleSubmit} disabled={!name.trim() || createLead.isPending || (duplicateInfo?.is_duplicate && duplicateInfo?.is_own)}>
                 {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
                 {!navigator.onLine ? "Save Offline" : "Capture Lead"}
               </Button>
@@ -283,16 +356,16 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@techcorp.com" />
+                  <Input type="email" value={email} onChange={(e) => handleEmailChange(e.target.value)} placeholder="sarah@techcorp.com" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Phone</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1-555-0101" />
+                  <Input value={phone} onChange={(e) => handlePhoneChange(e.target.value)} placeholder="+1-555-0101" />
                 </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Event</Label>
-                <Select value={eventId} onValueChange={setEventId}>
+                <Select value={eventId} onValueChange={handleEventChange}>
                   <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
                   <SelectContent>
                     {events?.map((e) => (
@@ -313,7 +386,28 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 )}
               </div>
 
-              <Button className="w-full" onClick={() => setStep(2)} disabled={!name.trim()}>
+              {/* Duplicate warning */}
+              {duplicateInfo?.is_duplicate && (
+                <Alert variant="destructive" className="border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 [&>svg]:text-amber-600">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    {duplicateInfo.is_own ? (
+                      <>
+                        You already captured <strong>{duplicateInfo.lead_name}</strong> at this event.{" "}
+                        <span className="underline cursor-pointer" onClick={() => { resetForm(); onClose(); }}>
+                          Edit the existing lead instead.
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <strong>{duplicateInfo.lead_name}</strong> was already captured at this event by <strong>{duplicateInfo.captured_by_name || "another team member"}</strong>. Creating a duplicate is not recommended.
+                      </>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button className="w-full" onClick={() => setStep(2)} disabled={!name.trim() || (duplicateInfo?.is_duplicate && duplicateInfo?.is_own)}>
                 Next: Qualification
               </Button>
             </div>
