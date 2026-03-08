@@ -61,8 +61,8 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     setResult(null);
 
     try {
-      // Resize image to keep payload small
-      const dataUrl = await resizeImage(file, 1024, 1024, 0.7);
+      // Resize aggressively — camera photos can be 10MB+
+      const dataUrl = await resizeImage(file, 800, 800, 0.5);
       setPreview(dataUrl);
       const base64 = dataUrl.split(",")[1];
 
