@@ -26,12 +26,25 @@ const EventsPage = () => {
   const deleteEvent = useDeleteEvent();
   const canManageEvents = isAdmin || isManager;
 
+  const [searchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventRow | null>(null);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
   const [date, setDate] = useState("");
   const [status, setStatus] = useState("upcoming");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  // Initialize filter from URL params
+  useEffect(() => {
+    const statusParam = searchParams.get("status");
+    if (statusParam) setStatusFilter(statusParam);
+  }, [searchParams]);
+
+  const filteredEvents = useMemo(() => {
+    if (statusFilter === "all") return events;
+    return events.filter((e) => e.status === statusFilter);
+  }, [events, statusFilter]);
 
   const openCreate = () => {
     setEditingEvent(null);
