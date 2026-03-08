@@ -53,7 +53,7 @@ const App = () => (
             <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AnalyticsPage /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin"]}><SettingsPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
             <Route path="/docs" element={<ProtectedRoute allowedRoles={["admin"]}><DocumentationPage /></ProtectedRoute>} />
             <Route path="/brand" element={<BrandGuidelines />} />
             <Route path="*" element={<NotFound />} />
