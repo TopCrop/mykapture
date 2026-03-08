@@ -4,6 +4,7 @@ import {
   Calendar,
   BarChart3,
   Settings,
+  FileText,
   Zap,
   LogOut,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const mainItems = [
 
 const settingsItems = [
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Docs", url: "/docs", icon: FileText },
 ];
 
 export function AppSidebar() {

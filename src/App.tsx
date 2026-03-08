@@ -10,6 +10,7 @@ import LeadsPage from "./pages/Leads";
 import EventsPage from "./pages/Events";
 import AnalyticsPage from "./pages/Analytics";
 import SettingsPage from "./pages/Settings";
+import DocumentationPage from "./pages/Documentation";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/docs" element={<ProtectedRoute><DocumentationPage /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
