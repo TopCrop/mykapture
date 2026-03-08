@@ -1,7 +1,8 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
 import { useLeads, useEvents, useUpdateLead, useDeleteLead } from "@/hooks/useData";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
