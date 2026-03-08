@@ -334,7 +334,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Email</Label>
-                  <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="sarah@techcorp.com" />
+                  <Input type="email" value={email} onChange={(e) => handleEmailChange(e.target.value)} placeholder="sarah@techcorp.com" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Phone</Label>
