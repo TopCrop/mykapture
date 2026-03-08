@@ -25,26 +25,30 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const mainItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Leads", url: "/leads", icon: Users },
-  { title: "Events", url: "/events", icon: Calendar },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+const allMainItems = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard, roles: ["admin", "manager", "sales_rep"] },
+  { title: "Leads", url: "/leads", icon: Users, roles: ["admin", "manager", "sales_rep"] },
+  { title: "Events", url: "/events", icon: Calendar, roles: ["admin", "manager", "sales_rep"] },
+  { title: "Analytics", url: "/analytics", icon: BarChart3, roles: ["admin", "manager"] },
 ];
 
-const settingsItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Docs", url: "/docs", icon: FileText },
+const allSettingsItems = [
+  { title: "Settings", url: "/settings", icon: Settings, roles: ["admin"] },
+  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin", "manager", "sales_rep"] },
 ];
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, userRole, signOut } = useAuth();
   const isActive = (path: string) => location.pathname === path;
   const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  const role = userRole ?? "sales_rep";
+  const mainItems = allMainItems.filter((item) => item.roles.includes(role));
+  const settingsItems = allSettingsItems.filter((item) => item.roles.includes(role));
 
   return (
     <Sidebar collapsible="icon">
@@ -103,28 +107,30 @@ export function AppSidebar() {
           <div className="brand-line" />
         </div>
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink
-                      to={item.url}
-                      end
-                      className="hover:bg-sidebar-accent/60 transition-all duration-200"
-                      activeClassName="bg-sidebar-accent text-primary font-medium border-l-2 border-primary"
-                    >
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span className="text-[13px]">{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+        {settingsItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">System</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {settingsItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={isActive(item.url)}>
+                      <NavLink
+                        to={item.url}
+                        end
+                        className="hover:bg-sidebar-accent/60 transition-all duration-200"
+                        activeClassName="bg-sidebar-accent text-primary font-medium border-l-2 border-primary"
+                      >
+                        <item.icon className="mr-2 h-4 w-4" />
+                        {!collapsed && <span className="text-[13px]">{item.title}</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="p-4">

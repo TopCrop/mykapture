@@ -15,7 +15,7 @@ import { toast } from "sonner";
 const EventsPage = () => {
   const { data: events = [], isLoading } = useEvents();
   const { data: leads = [] } = useLeads();
-  const { user } = useAuth();
+  const { user, isSalesRep } = useAuth();
   const createEvent = useCreateEvent();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState("");
@@ -44,15 +44,17 @@ const EventsPage = () => {
   return (
     <DashboardLayout title="Events" subtitle="Conference management">
       <div className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => setDialogOpen(true)} size="sm">
-            <Plus className="mr-1.5 h-4 w-4" /> New Event
-          </Button>
-        </div>
+        {!isSalesRep && (
+          <div className="flex justify-end">
+            <Button onClick={() => setDialogOpen(true)} size="sm">
+              <Plus className="mr-1.5 h-4 w-4" /> New Event
+            </Button>
+          </div>
+        )}
 
         {events.length === 0 ? (
           <div className="glass-card rounded-xl p-8 text-center text-sm text-muted-foreground">
-            {isLoading ? "Loading..." : "No events yet. Create your first conference event!"}
+            {isLoading ? "Loading..." : "No events yet."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

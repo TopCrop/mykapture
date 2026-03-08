@@ -10,22 +10,27 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { useProfiles } from "@/hooks/useData";
+import { useAuth } from "@/hooks/useAuth";
 import type { LeadClassification } from "@/types/lead";
 
 const Index = () => {
   const { data: leads = [], isLoading: leadsLoading } = useLeads();
   const { data: events = [] } = useEvents();
   const { data: profiles = [] } = useProfiles();
+  const { user, isSalesRep } = useAuth();
   const [captureOpen, setCaptureOpen] = useState(false);
 
-  const hotLeads = leads.filter((l) => l.classification === "hot").length;
-  const avgScore = leads.length > 0 ? Math.round(leads.reduce((a, l) => a + l.score, 0) / leads.length) : 0;
+  // For sales reps, filter to only their own leads
+  const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
+
+  const hotLeads = displayLeads.filter((l) => l.classification === "hot").length;
+  const avgScore = displayLeads.length > 0 ? Math.round(displayLeads.reduce((a, l) => a + l.score, 0) / displayLeads.length) : 0;
   const activeEvents = events.filter((e) => e.status === "active").length;
 
   const classificationData = [
-    { name: "Hot", value: leads.filter((l) => l.classification === "hot").length, color: "hsl(0, 72%, 56%)" },
-    { name: "Warm", value: leads.filter((l) => l.classification === "warm").length, color: "hsl(38, 92%, 50%)" },
-    { name: "Cold", value: leads.filter((l) => l.classification === "cold").length, color: "hsl(210, 80%, 56%)" },
+    { name: "Hot", value: displayLeads.filter((l) => l.classification === "hot").length, color: "hsl(0, 72%, 56%)" },
+    { name: "Warm", value: displayLeads.filter((l) => l.classification === "warm").length, color: "hsl(38, 92%, 50%)" },
+    { name: "Cold", value: displayLeads.filter((l) => l.classification === "cold").length, color: "hsl(210, 80%, 56%)" },
   ];
 
   const repMap = new Map<string, { name: string; count: number }>();
@@ -39,7 +44,7 @@ const Index = () => {
   const repData = Array.from(repMap.values()).map((r) => ({ name: r.name, leads: r.count }));
 
   return (
-    <DashboardLayout title="Dashboard" subtitle="Conference Lead Capture">
+    <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"}>
       <div className="space-y-6">
         {/* Hero action bar */}
         <div className="flex items-center justify-between">
@@ -47,7 +52,7 @@ const Index = () => {
             <div className="h-8 w-[3px] rounded-full bg-primary" />
             <div>
               <p className="text-xs text-muted-foreground">Welcome back</p>
-              <p className="text-sm font-semibold">Overview</p>
+              <p className="text-sm font-semibold">{isSalesRep ? "My Leads" : "Overview"}</p>
             </div>
           </div>
           <Button onClick={() => setCaptureOpen(true)} size="sm" className="gap-1.5">
@@ -57,14 +62,14 @@ const Index = () => {
 
         {/* Stats grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Total Leads" value={leads.length} change={leads.length > 0 ? `${leads.length} captured` : "No leads yet"} changeType="neutral" icon={Users} delay={0} />
-          <StatCard title="Hot Leads" value={hotLeads} change={leads.length > 0 ? `${Math.round((hotLeads / leads.length) * 100)}% of total` : "—"} changeType="positive" icon={Flame} iconColor="bg-hot/10 border-hot/20" delay={0.05} />
+          <StatCard title={isSalesRep ? "My Leads" : "Total Leads"} value={displayLeads.length} change={displayLeads.length > 0 ? `${displayLeads.length} captured` : "No leads yet"} changeType="neutral" icon={Users} delay={0} />
+          <StatCard title="Hot Leads" value={hotLeads} change={displayLeads.length > 0 ? `${Math.round((hotLeads / displayLeads.length) * 100)}% of total` : "—"} changeType="positive" icon={Flame} iconColor="bg-hot/10 border-hot/20" delay={0.05} />
           <StatCard title="Avg Score" value={avgScore} change={avgScore >= 50 ? "Above target" : "Below target"} changeType={avgScore >= 50 ? "positive" : "negative"} icon={TrendingUp} delay={0.1} />
           <StatCard title="Active Events" value={activeEvents} change={`${events.length} total`} changeType="neutral" icon={Calendar} delay={0.15} />
         </div>
 
-        {/* Charts */}
-        {leads.length > 0 && (
+        {/* Charts — only for admin/manager */}
+        {!isSalesRep && displayLeads.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="glass-card p-5 relative overflow-hidden">
               <div className="absolute inset-0 geo-diagonal pointer-events-none" />
@@ -110,14 +115,14 @@ const Index = () => {
         {/* Recent leads table */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="glass-card overflow-hidden">
           <div className="flex items-center justify-between p-5 pb-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Recent Leads</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{isSalesRep ? "My Recent Leads" : "Recent Leads"}</h3>
             <Link to="/leads" className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors">
               View all <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
           {/* Decorative line */}
           <div className="mx-5 brand-line" />
-          {leads.length === 0 ? (
+          {displayLeads.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
               No leads captured yet. Click "Capture Lead" to get started.
             </div>
@@ -134,7 +139,7 @@ const Index = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {leads.slice(0, 5).map((lead) => (
+                  {displayLeads.slice(0, 5).map((lead) => (
                     <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
                       <td className="px-5 py-3">
                         <p className="font-medium text-sm">{lead.name}</p>
