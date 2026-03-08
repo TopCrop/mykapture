@@ -65,7 +65,7 @@ const DocumentationPage = () => {
           <Section title="Product Architecture" icon={Network}>
             <InfoCard title="System Overview">
               <p className="text-sm text-muted-foreground">
-                LeadCapture is a single-page React application with a serverless backend. 
+                Kapture is a single-page React application with a serverless backend. 
                 The frontend is built with React 18, Vite, TypeScript, and Tailwind CSS. 
                 Backend services are powered by Lovable Cloud (PostgreSQL database, edge functions, file storage, and authentication).
               </p>
