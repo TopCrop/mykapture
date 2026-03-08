@@ -136,15 +136,18 @@ export function AppSidebar() {
       <SidebarFooter className="p-4">
         {!collapsed && (
           <div className="space-y-2">
-            <div className="flex items-center gap-2.5 rounded-lg bg-sidebar-accent/80 border border-border p-2.5">
+            <button
+              onClick={() => navigate("/settings?tab=profile")}
+              className="flex w-full items-center gap-2.5 rounded-lg bg-sidebar-accent/80 border border-border p-2.5 hover:bg-sidebar-accent transition-colors cursor-pointer"
+            >
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-xs font-bold text-primary border border-primary/20">
                 {initials}
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0 text-left">
                 <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
                 <p className="truncate text-[10px] text-muted-foreground">{user?.email}</p>
               </div>
-            </div>
+            </button>
             <button onClick={signOut} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
               <LogOut className="h-3.5 w-3.5" />
               Sign out
