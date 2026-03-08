@@ -315,11 +315,21 @@ const LeadsPage = () => {
   const { data: events = [] } = useEvents();
   const { user, isSalesRep, isAdmin } = useAuth();
   const deleteLead = useDeleteLead();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
+  const [followupFilter, setFollowupFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Initialize filters from URL params
+  useEffect(() => {
+    const classification = searchParams.get("classification");
+    if (classification) setClassFilter(classification);
+    const followup = searchParams.get("followup");
+    if (followup) setFollowupFilter(followup);
+  }, [searchParams]);
 
   // Sales reps only see their own leads
   const displayLeads = isSalesRep ? leads.filter((l) => l.captured_by === user?.id) : leads;
