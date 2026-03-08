@@ -65,6 +65,9 @@ const SettingsPage = () => {
 
         {isAdmin && (
           <>
+            <TabsContent value="organization">
+              <OrganizationSettings />
+            </TabsContent>
             <TabsContent value="team">
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
                 <div className="p-5 pb-3">
