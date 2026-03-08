@@ -487,7 +487,7 @@ const DocumentationPage = () => {
         {/* ─── 6. CRM MAPPING ─── */}
         <TabsContent value="crm">
           <Section title="CRM Mapping Documentation" icon={Link2}>
-            <InfoCard title="Field Mapping: LeadCapture → CRM">
+            <InfoCard title="Field Mapping: Kapture → CRM">
               <p className="text-xs text-muted-foreground mb-3">
                 The following mapping supports HubSpot, Salesforce, and Pipedrive. 
                 CRM sync will be triggered via the <code>sync_status</code> field on each lead.
