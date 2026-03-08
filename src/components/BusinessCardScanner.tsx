@@ -20,7 +20,7 @@ interface BusinessCardScannerProps {
 }
 
 // Resize image to reduce payload size for the edge function
-function resizeImage(file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.8): Promise<string> {
+function resizeImage(file: File, maxWidth = 800, maxHeight = 800, quality = 0.6): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
@@ -37,13 +37,14 @@ function resizeImage(file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.
         canvas.height = height;
         const ctx = canvas.getContext("2d")!;
         ctx.drawImage(img, 0, 0, width, height);
+        // Use lower quality JPEG to keep base64 payload small
         const dataUrl = canvas.toDataURL("image/jpeg", quality);
         resolve(dataUrl);
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error("Failed to load image"));
       img.src = reader.result as string;
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error("Failed to read file"));
     reader.readAsDataURL(file);
   });
 }
