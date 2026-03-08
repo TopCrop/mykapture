@@ -399,80 +399,114 @@ const LeadsPage = () => {
         </div>
 
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card overflow-hidden">
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="p-5 space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-24 hidden md:block" />
+                  <Skeleton className="h-5 w-14" />
+                  <Skeleton className="h-4 w-10 hidden sm:block" />
+                  <Skeleton className="h-4 w-16 hidden lg:block" />
+                  <Skeleton className="h-4 w-16 hidden lg:block" />
+                </div>
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
-              {isLoading ? "Loading..." : displayLeads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
+              {displayLeads.length === 0 ? "No leads yet. Capture your first lead!" : "No leads match your filters."}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Score</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((lead) => (
-                    <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
-                      <td className="px-5 py-3">
-                        <p className="font-medium">{lead.name}</p>
-                        <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
-                      </td>
-                      <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
-                      <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
-                      <td className="px-5 py-3 hidden sm:table-cell"><ScoreBadge score={lead.score} /></td>
-                      <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
-                      <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
-                      <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
-                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 gap-1 text-xs hover:bg-secondary hover:text-primary"
-                            onClick={() => setSelectedLead(lead)}
-                            title="View / Edit lead"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <FollowUpEmailButton lead={lead} />
-                          {isAdmin && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive">
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Lead</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete "{lead.name}"? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={(e) => handleDelete(lead.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </td>
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left">
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Score</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {paginatedLeads.map((lead) => (
+                      <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                        <td className="px-5 py-3">
+                          <p className="font-medium">{lead.name}</p>
+                          <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
+                        </td>
+                        <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
+                        <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
+                        <td className="px-5 py-3 hidden sm:table-cell"><ScoreBadge score={lead.score} /></td>
+                        <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
+                        <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
+                        <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
+                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs hover:bg-secondary hover:text-primary" onClick={() => setSelectedLead(lead)} title="View / Edit lead">
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <FollowUpEmailButton lead={lead} />
+                            {isAdmin && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+                                    <AlertDialogDescription>Are you sure you want to delete "{lead.name}"? This action cannot be undone.</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={(e) => handleDelete(lead.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+                  <p className="text-[11px] text-muted-foreground">
+                    Showing {(safeCurrentPage - 1) * LEADS_PER_PAGE + 1}–{Math.min(safeCurrentPage * LEADS_PER_PAGE, filtered.length)} of {filtered.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={safeCurrentPage <= 1} onClick={() => setCurrentPage(safeCurrentPage - 1)}>
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      let page: number;
+                      if (totalPages <= 5) page = i + 1;
+                      else if (safeCurrentPage <= 3) page = i + 1;
+                      else if (safeCurrentPage >= totalPages - 2) page = totalPages - 4 + i;
+                      else page = safeCurrentPage - 2 + i;
+                      return (
+                        <Button key={page} variant={page === safeCurrentPage ? "default" : "ghost"} size="sm" className="h-7 w-7 p-0 text-xs" onClick={() => setCurrentPage(page)}>
+                          {page}
+                        </Button>
+                      );
+                    })}
+                    <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={safeCurrentPage >= totalPages} onClick={() => setCurrentPage(safeCurrentPage + 1)}>
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </motion.div>
       </div>
