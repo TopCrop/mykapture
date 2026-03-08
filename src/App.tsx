@@ -55,6 +55,7 @@ const App = () => (
             <Route path="/analytics" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AnalyticsPage /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute allowedRoles={["admin"]}><SettingsPage /></ProtectedRoute>} />
             <Route path="/docs" element={<ProtectedRoute allowedRoles={["admin"]}><DocumentationPage /></ProtectedRoute>} />
+            <Route path="/brand" element={<BrandGuidelines />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
