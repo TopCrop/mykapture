@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { Navigate } from "react-router-dom";
 import { useOrg } from "@/hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,11 @@ const OrgSetupPage = () => {
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
+  }
+
+  // Super admins don't need an org — redirect to super admin dashboard
+  if (isSuperAdmin) {
+    return <Navigate to="/super-admin" replace />;
   }
 
   const handleCreate = async () => {
