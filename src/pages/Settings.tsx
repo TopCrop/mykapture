@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
 import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User } from "lucide-react";
