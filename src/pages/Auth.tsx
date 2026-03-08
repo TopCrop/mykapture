@@ -11,6 +11,34 @@ import { KaptureLogo } from "@/components/KaptureLogo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { PasswordStrengthIndicator, getPasswordStrength } from "@/components/PasswordStrengthIndicator";
+import disposableDomains from "disposable-email-domains";
+
+// Common consumer email domains to block (in addition to disposable list)
+const CONSUMER_DOMAINS = new Set([
+  "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
+  "hotmail.com", "hotmail.co.uk", "outlook.com", "live.com", "msn.com",
+  "aol.com", "icloud.com", "me.com", "mac.com", "mail.com",
+  "rediffmail.com", "rediff.com", "ymail.com", "rocketmail.com",
+  "protonmail.com", "proton.me", "tutanota.com", "zoho.com",
+  "gmx.com", "gmx.net", "yandex.com", "yandex.ru",
+  "qq.com", "163.com", "126.com", "sina.com",
+  "inbox.com", "mail.ru", "fastmail.com",
+]);
+
+// Combine disposable domains into a Set for O(1) lookup
+const BLOCKED_DOMAINS = new Set([
+  ...CONSUMER_DOMAINS,
+  ...disposableDomains,
+]);
+
+function getEmailDomainError(email: string): string | null {
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return null;
+  if (BLOCKED_DOMAINS.has(domain)) {
+    return "Please use your work email address. Personal and disposable email domains are not allowed.";
+  }
+  return null;
+}
 
 type AuthView = "login" | "signup" | "forgot";
 
