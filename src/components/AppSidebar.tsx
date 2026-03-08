@@ -5,10 +5,10 @@ import {
   BarChart3,
   Settings,
   FileText,
-  Zap,
   LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
+import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
