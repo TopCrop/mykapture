@@ -1,21 +1,23 @@
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
 import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole } from "@/hooks/useData";
+import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads } from "@/hooks/useData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import type { AppRole } from "@/hooks/useAuth";
+import { useMemo } from "react";
 
 const SettingsPage = () => {
   const { isAdmin, user } = useAuth();
   const { data: profiles = [] } = useProfiles();
   const { data: roles = [] } = useUserRoles();
   const { data: submissions = [] } = useContactSubmissions();
+  const { data: leads = [] } = useLeads();
   const updateRole = useUpdateUserRole();
 
   const getUserRole = (userId: string): AppRole => {
@@ -29,6 +31,15 @@ const SettingsPage = () => {
       await updateRole.mutateAsync({ id: existing.id, role: newRole });
     }
   };
+
+  // Count leads per user
+  const leadsPerUser = useMemo(() => {
+    const map = new Map<string, number>();
+    leads.forEach((l) => {
+      map.set(l.captured_by, (map.get(l.captured_by) || 0) + 1);
+    });
+    return map;
+  }, [leads]);
 
   const placeholderSections = [
     { icon: Shield, title: "Security", description: "SSO, authentication, and access controls will be configured here." },
@@ -67,9 +78,11 @@ const SettingsPage = () => {
                       <thead>
                         <tr className="border-b border-border text-left">
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
-                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Team</th>
+                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Email</th>
+                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Team</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Territory</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Role</th>
+                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Leads</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Joined</th>
                         </tr>
                       </thead>
@@ -77,13 +90,15 @@ const SettingsPage = () => {
                         {profiles.map((profile) => {
                           const role = getUserRole(profile.user_id);
                           const isCurrentUser = profile.user_id === user?.id;
+                          const leadCount = leadsPerUser.get(profile.user_id) || 0;
                           return (
                             <tr key={profile.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
                               <td className="px-5 py-3">
                                 <p className="font-medium">{profile.display_name || "—"}</p>
-                                <p className="text-[11px] text-muted-foreground">{profile.phone || "—"}</p>
+                                <p className="text-[11px] text-muted-foreground sm:hidden">{profile.phone || "—"}</p>
                               </td>
-                              <td className="px-5 py-3 hidden sm:table-cell text-muted-foreground">{profile.team || "—"}</td>
+                              <td className="px-5 py-3 hidden sm:table-cell text-muted-foreground text-xs">{profile.phone || "—"}</td>
+                              <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{profile.team || "—"}</td>
                               <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{profile.territory || "—"}</td>
                               <td className="px-5 py-3">
                                 {isCurrentUser ? (
@@ -100,6 +115,14 @@ const SettingsPage = () => {
                                     </SelectContent>
                                   </Select>
                                 )}
+                              </td>
+                              <td className="px-5 py-3 hidden sm:table-cell">
+                                <Link
+                                  to={`/leads?rep=${profile.user_id}`}
+                                  className="text-xs font-mono text-primary hover:underline"
+                                >
+                                  {leadCount}
+                                </Link>
                               </td>
                               <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString()}

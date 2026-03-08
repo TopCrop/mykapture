@@ -12,6 +12,7 @@ import { NavLink } from "@/components/NavLink";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +38,12 @@ const allSettingsItems = [
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep"] },
   { title: "Docs", url: "/docs", icon: FileText, roles: ["admin"] },
 ];
+
+const roleLabels: Record<string, string> = {
+  admin: "Admin",
+  manager: "Manager",
+  sales_rep: "Sales Rep",
+};
 
 export function AppSidebar() {
   const { state } = useSidebar();
@@ -154,7 +161,11 @@ export function AppSidebar() {
               )}
               <div className="flex-1 min-w-0 text-left">
                 <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
-                <p className="truncate text-[10px] text-muted-foreground">{user?.email}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium border-primary/30 text-primary">
+                    {roleLabels[role] || role}
+                  </Badge>
+                </div>
               </div>
             </button>
             <button onClick={signOut} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">

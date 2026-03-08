@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { FilterContextBanner } from "@/components/FilterContextBanner";
 import type { Database } from "@/integrations/supabase/types";
 
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -26,7 +27,7 @@ const EventsPage = () => {
   const deleteEvent = useDeleteEvent();
   const canManageEvents = isAdmin || isManager;
 
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventRow | null>(null);
   const [name, setName] = useState("");
@@ -45,6 +46,11 @@ const EventsPage = () => {
     if (statusFilter === "all") return events;
     return events.filter((e) => e.status === statusFilter);
   }, [events, statusFilter]);
+
+  const clearUrlFilters = () => {
+    setStatusFilter("all");
+    setSearchParams({});
+  };
 
   const openCreate = () => {
     setEditingEvent(null);
@@ -105,6 +111,9 @@ const EventsPage = () => {
   return (
     <DashboardLayout title="Events" subtitle="Conference management">
       <div className="space-y-4">
+        {/* Filter context banner */}
+        <FilterContextBanner labels={{ status: "Status" }} onClear={clearUrlFilters} />
+
         {!isSalesRep && (
           <div className="flex justify-end">
             <Button onClick={openCreate} size="sm">
@@ -164,7 +173,13 @@ const EventsPage = () => {
                   <div className="space-y-2 text-xs text-muted-foreground">
                     {event.location && <div className="flex items-center gap-2"><MapPin className="h-3 w-3" />{event.location}</div>}
                     {event.date && <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3" />{new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>}
-                    <div className="flex items-center gap-2"><Users className="h-3 w-3" />{leadCount} leads captured ({hotCount} hot)</div>
+                    <Link
+                      to={`/leads?event=${event.id}`}
+                      className="flex items-center gap-2 hover:text-primary transition-colors group"
+                    >
+                      <Users className="h-3 w-3" />
+                      <span className="group-hover:underline">{leadCount} leads captured ({hotCount} hot)</span>
+                    </Link>
                   </div>
                   {canManageEvents && (
                     <div className="flex items-center gap-2 pt-1 border-t border-border">
