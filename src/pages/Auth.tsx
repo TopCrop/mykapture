@@ -6,10 +6,11 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Loader2, ArrowLeft } from "lucide-react";
+import { Mail, Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { PasswordStrengthIndicator, getPasswordStrength } from "@/components/PasswordStrengthIndicator";
 
 type AuthView = "login" | "signup" | "forgot";
 
@@ -20,6 +21,7 @@ const AuthPage = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
 
   if (authLoading) {
     return (
@@ -41,16 +43,20 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       } else if (view === "signup") {
+        if (!getPasswordStrength(password)) {
+          toast.error("Please meet all password requirements.");
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: fullName },
-            emailRedirectTo: window.location.origin,
+            emailRedirectTo: window.location.origin + "/auth",
           },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account.");
+        setSignupSuccess(true);
       }
     } catch (error: any) {
       toast.error(error.message);
@@ -121,7 +127,28 @@ const AuthPage = () => {
         </div>
 
         <div className="glass-card-elevated p-6 space-y-5">
-          {view === "forgot" ? (
+          {signupSuccess ? (
+            <div className="text-center space-y-4 py-4">
+              <CheckCircle2 className="h-12 w-12 text-emerald-500 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold text-foreground">Check your email</h3>
+                <p className="text-sm text-muted-foreground">
+                  We've sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
+                  Please verify your email, then sign in.
+                </p>
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setSignupSuccess(false);
+                  setView("login");
+                  setPassword("");
+                }}
+              >
+                Go to Sign In
+              </Button>
+            </div>
+          ) : view === "forgot" ? (
             <>
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-1.5">
@@ -176,9 +203,10 @@ const AuthPage = () => {
                       </button>
                     )}
                   </div>
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={6} />
+                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required minLength={8} />
+                  {view === "signup" && <PasswordStrengthIndicator password={password} />}
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full" disabled={loading || (view === "signup" && !getPasswordStrength(password))}>
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   {view === "login" ? "Sign In" : "Create Account"}
                 </Button>
