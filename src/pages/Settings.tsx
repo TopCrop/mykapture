@@ -113,6 +113,7 @@ const SettingsPage = () => {
                                       <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
+                                      {isSuperAdmin && <SelectItem value="super_admin">Super Admin</SelectItem>}
                                       <SelectItem value="admin">Admin</SelectItem>
                                       <SelectItem value="manager">Manager</SelectItem>
                                       <SelectItem value="sales_rep">Sales Rep</SelectItem>
