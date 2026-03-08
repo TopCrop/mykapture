@@ -19,6 +19,35 @@ interface BusinessCardScannerProps {
   onExtracted: (contact: ExtractedContact) => void;
 }
 
+// Resize image to reduce payload size for the edge function
+function resizeImage(file: File, maxWidth = 1024, maxHeight = 1024, quality = 0.8): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => {
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCardScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -31,16 +60,10 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     setResult(null);
 
     try {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const dataUrl = reader.result as string;
-          setPreview(dataUrl);
-          resolve(dataUrl.split(",")[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      // Resize image to keep payload small
+      const dataUrl = await resizeImage(file, 1024, 1024, 0.7);
+      setPreview(dataUrl);
+      const base64 = dataUrl.split(",")[1];
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-business-card`,
@@ -55,7 +78,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       );
 
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response.json().catch(() => ({ error: "Scan failed" }));
         throw new Error(err.error || "Scan failed");
       }
 
@@ -63,6 +86,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       setResult(data.contact);
       toast.success("Business card scanned successfully!");
     } catch (error: any) {
+      console.error("Scanner error:", error);
       toast.error(error.message || "Failed to scan business card");
     } finally {
       setScanning(false);
@@ -72,6 +96,8 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) processImage(file);
+    // Reset input so the same file can be selected again
+    e.target.value = "";
   };
 
   const handleUseContact = () => {

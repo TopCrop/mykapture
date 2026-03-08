@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, FileAudio } from "lucide-react";
+import { Mic, Square, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -16,6 +16,65 @@ interface TranscriptionResult {
 
 interface VoiceNoteRecorderProps {
   onTranscribed: (result: TranscriptionResult, voiceNoteUrl: string) => void;
+}
+
+/**
+ * Convert a WebM blob to WAV using the Web Audio API.
+ * Gemini's OpenAI-compatible endpoint requires wav/mp3/flac — not webm.
+ */
+async function convertToWav(blob: Blob): Promise<Blob> {
+  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  const arrayBuffer = await blob.arrayBuffer();
+
+  let audioBuffer: AudioBuffer;
+  try {
+    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  } catch {
+    // If decoding fails, return original blob (edge function will handle error)
+    await audioCtx.close();
+    return blob;
+  }
+
+  const numChannels = 1; // mono
+  const sampleRate = audioBuffer.sampleRate;
+  const samples = audioBuffer.getChannelData(0);
+  const wavBuffer = encodeWav(samples, sampleRate, numChannels);
+  await audioCtx.close();
+  return new Blob([wavBuffer], { type: "audio/wav" });
+}
+
+function encodeWav(samples: Float32Array, sampleRate: number, numChannels: number): ArrayBuffer {
+  const bytesPerSample = 2;
+  const blockAlign = numChannels * bytesPerSample;
+  const dataSize = samples.length * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataSize);
+  const view = new DataView(buffer);
+
+  const writeString = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+  };
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bytesPerSample * 8, true);
+  writeString(36, "data");
+  view.setUint32(40, dataSize, true);
+
+  let offset = 44;
+  for (let i = 0; i < samples.length; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+  return buffer;
 }
 
 export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
@@ -40,8 +99,8 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
-        const blob = new Blob(chunksRef.current, { type: "audio/webm" });
-        await processRecording(blob);
+        const webmBlob = new Blob(chunksRef.current, { type: "audio/webm" });
+        await processRecording(webmBlob);
       };
 
       mediaRecorder.start(250);
@@ -59,27 +118,29 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
     if (timerRef.current) clearInterval(timerRef.current);
   }, []);
 
-  const processRecording = async (blob: Blob) => {
+  const processRecording = async (webmBlob: Blob) => {
     if (!user) return;
     setTranscribing(true);
 
     try {
-      // 1. Upload audio to storage
+      // Convert WebM → WAV for Gemini compatibility
+      const wavBlob = await convertToWav(webmBlob);
+
+      // 1. Upload original webm to storage (smaller file)
       const fileName = `${user.id}/${Date.now()}.webm`;
       const { error: uploadErr } = await supabase.storage
         .from("voice-notes")
-        .upload(fileName, blob, { contentType: "audio/webm" });
+        .upload(fileName, webmBlob, { contentType: "audio/webm" });
       if (uploadErr) throw uploadErr;
 
-      // Get signed URL (private bucket)
       const { data: urlData } = await supabase.storage
         .from("voice-notes")
-        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365);
 
       const voiceNoteUrl = urlData?.signedUrl || fileName;
 
-      // 2. Convert to base64 for transcription
-      const arrayBuffer = await blob.arrayBuffer();
+      // 2. Convert WAV to base64 for transcription
+      const arrayBuffer = await wavBlob.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
       let binary = "";
       for (let i = 0; i < uint8.length; i++) {
@@ -96,12 +157,12 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ audioBase64 }),
+          body: JSON.stringify({ audioBase64, format: "wav" }),
         }
       );
 
       if (!response.ok) {
-        const err = await response.json();
+        const err = await response.json().catch(() => ({ error: "Transcription failed" }));
         throw new Error(err.error || "Transcription failed");
       }
 
@@ -109,6 +170,7 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
       onTranscribed(result, voiceNoteUrl);
       toast.success("Voice note transcribed!");
     } catch (error: any) {
+      console.error("Voice note error:", error);
       toast.error(error.message || "Failed to process voice note");
     } finally {
       setTranscribing(false);

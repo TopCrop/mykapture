@@ -7,6 +7,8 @@ type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type FollowUpBookingInsert = Database["public"]["Tables"]["follow_up_bookings"]["Insert"];
+type FollowUpBookingRow = Database["public"]["Tables"]["follow_up_bookings"]["Row"];
 
 export function useLeads() {
   return useQuery({
@@ -64,8 +66,8 @@ export function useCreateLead() {
 export function useCreateFollowUpBooking() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (booking: { lead_id: string; booked_by: string; follow_up_date: string; duration_minutes?: number; meeting_type?: string; notes?: string }) => {
-      const { data, error } = await supabase.from("follow_up_bookings" as any).insert(booking).select().single();
+    mutationFn: async (booking: Omit<FollowUpBookingInsert, "id" | "created_at" | "updated_at" | "status">) => {
+      const { data, error } = await supabase.from("follow_up_bookings").insert(booking).select().single();
       if (error) throw error;
       return data;
     },
@@ -79,11 +81,11 @@ export function useFollowUpBookings(leadId?: string) {
   return useQuery({
     queryKey: ["follow_up_bookings", leadId],
     queryFn: async () => {
-      let query = supabase.from("follow_up_bookings" as any).select("*").order("follow_up_date", { ascending: true });
+      let query = supabase.from("follow_up_bookings").select("*").order("follow_up_date", { ascending: true });
       if (leadId) query = query.eq("lead_id", leadId);
       const { data, error } = await query;
       if (error) throw error;
-      return data as any[];
+      return data as FollowUpBookingRow[];
     },
   });
 }
