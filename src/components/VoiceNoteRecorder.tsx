@@ -18,64 +18,6 @@ interface VoiceNoteRecorderProps {
   onTranscribed: (result: TranscriptionResult, voiceNoteUrl: string) => void;
 }
 
-/**
- * Convert a WebM blob to WAV using the Web Audio API.
- * Gemini's OpenAI-compatible endpoint requires wav/mp3/flac — not webm.
- */
-async function convertToWav(blob: Blob): Promise<Blob> {
-  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const arrayBuffer = await blob.arrayBuffer();
-
-  let audioBuffer: AudioBuffer;
-  try {
-    audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-  } catch {
-    // If decoding fails, return original blob (edge function will handle error)
-    await audioCtx.close();
-    return blob;
-  }
-
-  const numChannels = 1; // mono
-  const sampleRate = audioBuffer.sampleRate;
-  const samples = audioBuffer.getChannelData(0);
-  const wavBuffer = encodeWav(samples, sampleRate, numChannels);
-  await audioCtx.close();
-  return new Blob([wavBuffer], { type: "audio/wav" });
-}
-
-function encodeWav(samples: Float32Array, sampleRate: number, numChannels: number): ArrayBuffer {
-  const bytesPerSample = 2;
-  const blockAlign = numChannels * bytesPerSample;
-  const dataSize = samples.length * bytesPerSample;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  const writeString = (offset: number, str: string) => {
-    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-  };
-
-  writeString(0, "RIFF");
-  view.setUint32(4, 36 + dataSize, true);
-  writeString(8, "WAVE");
-  writeString(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * blockAlign, true);
-  view.setUint16(32, blockAlign, true);
-  view.setUint16(34, bytesPerSample * 8, true);
-  writeString(36, "data");
-  view.setUint32(40, dataSize, true);
-
-  let offset = 44;
-  for (let i = 0; i < samples.length; i++) {
-    const s = Math.max(-1, Math.min(1, samples[i]));
-    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
-    offset += 2;
-  }
-  return buffer;
-}
 
 export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
   const { user } = useAuth();
