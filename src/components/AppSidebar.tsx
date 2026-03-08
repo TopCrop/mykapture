@@ -57,15 +57,19 @@ export function AppSidebar() {
             <path d="M64 32 L64 64 L32 64" stroke="hsl(168, 80%, 48%)" strokeWidth="0.5" />
           </svg>
         </div>
-        <div className="flex items-center gap-2.5 z-10">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 border border-primary/25">
-            <Zap className="h-4 w-4 text-primary" />
-          </div>
-          {!collapsed && (
-            <div>
-              <h2 className="text-sm font-bold text-sidebar-foreground tracking-tight">Kapture</h2>
-              <p className="text-[10px] text-muted-foreground">Conference Edition</p>
+        <div className="z-10">
+          {collapsed ? (
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/15 border border-primary/25">
+              <svg viewBox="0 0 32 32" fill="none" className="h-4 w-4">
+                <rect x="2" y="4" width="4" height="24" rx="1" fill="hsl(168, 80%, 48%)" />
+                <path d="M6 16 L18 4 L22 4 L10 16" fill="hsl(168, 80%, 48%)" />
+                <path d="M6 16 L10 16 L22 28 L18 28" fill="hsl(168, 80%, 48%)" />
+                <circle cx="17" cy="16" r="5" stroke="hsl(168, 80%, 48%)" strokeWidth="1.5" fill="none" />
+                <circle cx="17" cy="16" r="2" fill="hsl(168, 80%, 48%)" />
+              </svg>
             </div>
+          ) : (
+            <KaptureLogo size="sm" showSubtitle />
           )}
         </div>
       </SidebarHeader>

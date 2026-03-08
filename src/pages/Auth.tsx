@@ -108,11 +108,10 @@ const AuthPage = () => {
         className="w-full max-w-sm space-y-6 relative z-10"
       >
         <div className="text-center space-y-3">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
-            <Zap className="h-6 w-6 text-primary" />
+          <div className="mx-auto flex justify-center">
+            <KaptureLogo size="lg" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Kapture</h1>
             <p className="text-sm text-muted-foreground mt-1">
               {view === "login" && "Sign in to your account"}
               {view === "signup" && "Create your account"}
