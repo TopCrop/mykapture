@@ -338,7 +338,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Phone</Label>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+1-555-0101" />
+                  <Input value={phone} onChange={(e) => handlePhoneChange(e.target.value)} placeholder="+1-555-0101" />
                 </div>
               </div>
               <div className="space-y-1.5">
