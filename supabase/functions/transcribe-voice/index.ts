@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64 } = await req.json();
+    const { audioBase64, format = "wav" } = await req.json();
     if (!audioBase64) {
       return new Response(JSON.stringify({ error: "No audio provided" }), {
         status: 400,
@@ -44,7 +43,7 @@ serve(async (req) => {
                 type: "input_audio",
                 input_audio: {
                   data: audioBase64,
-                  format: "wav",
+                  format: format,
                 },
               },
             ],
