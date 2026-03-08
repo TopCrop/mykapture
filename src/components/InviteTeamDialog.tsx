@@ -19,7 +19,7 @@ export function InviteTeamDialog() {
   const [email, setEmail] = useState("");
   const [copied, setCopied] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
-  const { orgId } = useOrg();
+  const { orgId, org } = useOrg();
   const createInvitation = useCreateInvitation();
   const { data: invitations = [] } = useInvitations();
   const deleteInvitation = useDeleteInvitation();
