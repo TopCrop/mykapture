@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import LandingPage from "./pages/Landing";
 import Index from "./pages/Index";
 import LeadsPage from "./pages/Leads";
 import EventsPage from "./pages/Events";
@@ -14,8 +15,26 @@ import DocumentationPage from "./pages/Documentation";
 import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
+import { useEffect } from "react";
+import { initOfflineSync } from "@/lib/offlineQueue";
+import { toast } from "sonner";
 
 const queryClient = new QueryClient();
+
+function OfflineSyncInit() {
+  useEffect(() => {
+    return initOfflineSync((result) => {
+      if (result.synced > 0) {
+        toast.success(`${result.synced} offline lead(s) synced!`);
+        queryClient.invalidateQueries({ queryKey: ["leads"] });
+      }
+      if (result.failed > 0) {
+        toast.error(`${result.failed} lead(s) failed to sync.`);
+      }
+    });
+  }, []);
+  return null;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -24,10 +43,12 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
+          <OfflineSyncInit />
           <Routes>
+            <Route path="/" element={<LandingPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
             <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute allowedRoles={["admin", "manager"]}><AnalyticsPage /></ProtectedRoute>} />
