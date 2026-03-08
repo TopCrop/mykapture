@@ -1,15 +1,16 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents, useUpdateLead } from "@/hooks/useData";
+import { useLeads, useEvents, useUpdateLead, useDeleteLead } from "@/hooks/useData";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X } from "lucide-react";
+import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Save, X, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -313,7 +314,8 @@ function LeadDetailDialog({ lead, open, onClose, events }: { lead: LeadRow | nul
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
-  const { user, isSalesRep } = useAuth();
+  const { user, isSalesRep, isAdmin } = useAuth();
+  const deleteLead = useDeleteLead();
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
@@ -327,6 +329,16 @@ const LeadsPage = () => {
     const matchesClass = classFilter === "all" || lead.classification === classFilter;
     return matchesSearch && matchesClass;
   });
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await deleteLead.mutateAsync(id);
+      toast.success("Lead deleted");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
 
   const exportCsv = () => {
     const headers = ["Name", "Title", "Company", "Email", "Phone", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured At"];
@@ -396,7 +408,7 @@ const LeadsPage = () => {
                     <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
                     <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
                     <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
-                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Follow-up</th>
+                    <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -413,7 +425,32 @@ const LeadsPage = () => {
                       <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                       <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                       <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
-                        <FollowUpEmailButton lead={lead} />
+                        <div className="flex items-center gap-1">
+                          <FollowUpEmailButton lead={lead} />
+                          {isAdmin && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{lead.name}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={(e) => handleDelete(lead.id, e)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

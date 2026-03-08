@@ -1,15 +1,14 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents } from "@/hooks/useData";
-import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus } from "lucide-react";
+import { useLeads, useEvents, useProfiles, useContactSubmissions } from "@/hooks/useData";
+import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus, Mail, UserCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
-import { useProfiles } from "@/hooks/useData";
 import { useAuth } from "@/hooks/useAuth";
 import type { LeadClassification } from "@/types/lead";
 
@@ -17,7 +16,8 @@ const Index = () => {
   const { data: leads = [], isLoading: leadsLoading } = useLeads();
   const { data: events = [] } = useEvents();
   const { data: profiles = [] } = useProfiles();
-  const { user, isSalesRep } = useAuth();
+  const { data: submissions = [] } = useContactSubmissions();
+  const { user, isSalesRep, isAdmin } = useAuth();
   const [captureOpen, setCaptureOpen] = useState(false);
 
   // For sales reps, filter to only their own leads
@@ -26,6 +26,7 @@ const Index = () => {
   const hotLeads = displayLeads.filter((l) => l.classification === "hot").length;
   const avgScore = displayLeads.length > 0 ? Math.round(displayLeads.reduce((a, l) => a + l.score, 0) / displayLeads.length) : 0;
   const activeEvents = events.filter((e) => e.status === "active").length;
+  const followUpsSent = displayLeads.filter((l) => l.follow_up_email_sent).length;
 
   const classificationData = [
     { name: "Hot", value: displayLeads.filter((l) => l.classification === "hot").length, color: "hsl(0, 72%, 56%)" },
@@ -67,6 +68,15 @@ const Index = () => {
           <StatCard title="Avg Score" value={avgScore} change={avgScore >= 50 ? "Above target" : "Below target"} changeType={avgScore >= 50 ? "positive" : "negative"} icon={TrendingUp} delay={0.1} />
           <StatCard title="Active Events" value={activeEvents} change={`${events.length} total`} changeType="neutral" icon={Calendar} delay={0.15} />
         </div>
+
+        {/* Admin KPIs */}
+        {isAdmin && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard title="Team Members" value={profiles.length} change="Active users" changeType="neutral" icon={UserCheck} delay={0.2} />
+            <StatCard title="Follow-ups Sent" value={followUpsSent} change={displayLeads.length > 0 ? `${Math.round((followUpsSent / displayLeads.length) * 100)}% rate` : "—"} changeType="positive" icon={Mail} delay={0.25} />
+            <StatCard title="Contact Submissions" value={submissions.length} change="From landing page" changeType="neutral" icon={Mail} delay={0.3} />
+          </div>
+        )}
 
         {/* Charts — only for admin/manager */}
         {!isSalesRep && displayLeads.length > 0 && (
