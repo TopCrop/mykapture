@@ -61,10 +61,17 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     setResult(null);
 
     try {
+      console.log("Processing image:", file.name, "size:", file.size, "type:", file.type);
+      
       // Resize aggressively — camera photos can be 10MB+
       const dataUrl = await resizeImage(file, 800, 800, 0.5);
       setPreview(dataUrl);
       const base64 = dataUrl.split(",")[1];
+      
+      console.log("Base64 length:", base64.length, "chars (~", Math.round(base64.length * 0.75 / 1024), "KB)");
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-business-card`,
@@ -75,11 +82,15 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ imageBase64: base64 }),
+          signal: controller.signal,
         }
       );
 
+      clearTimeout(timeout);
+
       if (!response.ok) {
         const err = await response.json().catch(() => ({ error: "Scan failed" }));
+        console.error("Scan response error:", response.status, err);
         throw new Error(err.error || "Scan failed");
       }
 
@@ -88,7 +99,11 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       toast.success("Business card scanned successfully!");
     } catch (error: any) {
       console.error("Scanner error:", error);
-      toast.error(error.message || "Failed to scan business card");
+      if (error.name === "AbortError") {
+        toast.error("Scan timed out. Try a clearer photo or upload from gallery.");
+      } else {
+        toast.error(error.message || "Failed to scan business card");
+      }
     } finally {
       setScanning(false);
     }
