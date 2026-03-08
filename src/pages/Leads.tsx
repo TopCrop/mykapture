@@ -256,6 +256,20 @@ const LeadsPage = () => {
               ))}
             </SelectContent>
           </Select>
+          {isAdmin && (
+            <Select value={repFilter} onValueChange={(v) => { setRepFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Rep" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Reps</SelectItem>
+                {uniqueReps.map((rep) => (
+                  <SelectItem key={rep.id} value={rep.id}>{rep.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="gap-1.5 hover:bg-secondary">
             <Download className="h-4 w-4" /> Export
           </Button>
