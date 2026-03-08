@@ -94,11 +94,14 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       } else if (view === "signup") {
-        const domainErr = getEmailDomainError(email);
-        if (domainErr) {
-          setEmailError(domainErr);
-          toast.error(domainErr);
-          return;
+        // Skip domain validation for invited signups
+        if (!inviteOrgId) {
+          const domainErr = getEmailDomainError(email);
+          if (domainErr) {
+            setEmailError(domainErr);
+            toast.error(domainErr);
+            return;
+          }
         }
         if (!getPasswordStrength(password)) {
           toast.error("Please meet all password requirements.");
