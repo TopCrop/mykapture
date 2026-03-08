@@ -24,10 +24,8 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // If user has no org and isn't on org-setup, redirect there
-  // Exception: super_admin can always access everything
+  // If user has no org and isn't super_admin, redirect to org-setup
   if (!hasOrg && userRole !== "super_admin") {
-    // Allow org-setup page itself
     if (window.location.pathname !== "/org-setup") {
       return <Navigate to="/org-setup" replace />;
     }
