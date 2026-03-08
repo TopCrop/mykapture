@@ -5,9 +5,11 @@ import {
   BarChart3,
   Settings,
   Zap,
+  LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Sidebar,
   SidebarContent,
@@ -37,7 +39,10 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
+  const { user, signOut } = useAuth();
   const isActive = (path: string) => location.pathname === path;
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
+  const initials = displayName.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
     <Sidebar collapsible="icon">
@@ -95,14 +100,20 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-4">
         {!collapsed && (
-          <div className="flex items-center gap-2 rounded-lg bg-sidebar-accent p-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-              AR
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 rounded-lg bg-sidebar-accent p-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {initials}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-xs font-medium text-sidebar-foreground">{displayName}</p>
+                <p className="truncate text-[10px] text-sidebar-foreground/60">{user?.email}</p>
+              </div>
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-medium text-sidebar-foreground">Alex Rivera</p>
-              <p className="truncate text-[10px] text-sidebar-foreground/60">Sales Rep</p>
-            </div>
+            <button onClick={signOut} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
+              <LogOut className="h-3.5 w-3.5" />
+              Sign out
+            </button>
           </div>
         )}
       </SidebarFooter>
