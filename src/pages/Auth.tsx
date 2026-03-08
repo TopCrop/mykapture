@@ -11,6 +11,34 @@ import { KaptureLogo } from "@/components/KaptureLogo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { PasswordStrengthIndicator, getPasswordStrength } from "@/components/PasswordStrengthIndicator";
+import disposableDomains from "disposable-email-domains";
+
+// Common consumer email domains to block (in addition to disposable list)
+const CONSUMER_DOMAINS = new Set([
+  "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.in", "yahoo.co.uk",
+  "hotmail.com", "hotmail.co.uk", "outlook.com", "live.com", "msn.com",
+  "aol.com", "icloud.com", "me.com", "mac.com", "mail.com",
+  "rediffmail.com", "rediff.com", "ymail.com", "rocketmail.com",
+  "protonmail.com", "proton.me", "tutanota.com", "zoho.com",
+  "gmx.com", "gmx.net", "yandex.com", "yandex.ru",
+  "qq.com", "163.com", "126.com", "sina.com",
+  "inbox.com", "mail.ru", "fastmail.com",
+]);
+
+// Combine disposable domains into a Set for O(1) lookup
+const BLOCKED_DOMAINS = new Set([
+  ...CONSUMER_DOMAINS,
+  ...disposableDomains,
+]);
+
+function getEmailDomainError(email: string): string | null {
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return null;
+  if (BLOCKED_DOMAINS.has(domain)) {
+    return "Please use your work email address. Personal and disposable email domains are not allowed.";
+  }
+  return null;
+}
 
 type AuthView = "login" | "signup" | "forgot";
 
@@ -23,6 +51,7 @@ const AuthPage = () => {
   const [loading, setLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   if (authLoading) {
     return (
@@ -35,6 +64,15 @@ const AuthPage = () => {
   if (user) {
     return <Navigate to="/dashboard" replace />;
   }
+  const handleEmailChange = (value: string) => {
+    setEmail(value);
+    if (view === "signup" && value.includes("@")) {
+      setEmailError(getEmailDomainError(value));
+    } else {
+      setEmailError(null);
+    }
+  };
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -44,6 +82,12 @@ const AuthPage = () => {
         if (error) throw error;
         toast.success("Welcome back!");
       } else if (view === "signup") {
+        const domainErr = getEmailDomainError(email);
+        if (domainErr) {
+          setEmailError(domainErr);
+          toast.error(domainErr);
+          return;
+        }
         if (!getPasswordStrength(password)) {
           toast.error("Please meet all password requirements.");
           return;
@@ -192,8 +236,19 @@ const AuthPage = () => {
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <Label htmlFor="email" className="text-xs">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" required />
+                  <Label htmlFor="email" className="text-xs">{view === "signup" ? "Work Email" : "Email"}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => handleEmailChange(e.target.value)}
+                    placeholder={view === "signup" ? "you@yourcompany.com" : "you@company.com"}
+                    required
+                    className={emailError ? "border-destructive focus-visible:ring-destructive" : ""}
+                  />
+                  {emailError && view === "signup" && (
+                    <p className="text-[11px] text-destructive mt-1">{emailError}</p>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -212,7 +267,7 @@ const AuthPage = () => {
                   </div>
                   {view === "signup" && <PasswordStrengthIndicator password={password} />}
                 </div>
-                <Button type="submit" className="w-full" disabled={loading || (view === "signup" && !getPasswordStrength(password))}>
+                <Button type="submit" className="w-full" disabled={loading || (view === "signup" && (!getPasswordStrength(password) || !!emailError))}>
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   {view === "login" ? "Sign In" : "Create Account"}
                 </Button>
