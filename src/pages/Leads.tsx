@@ -299,6 +299,7 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
                         <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
                         <td className="px-5 py-3 hidden sm:table-cell"><ScoreBadge score={lead.score} /></td>
+                        <td className="px-5 py-3 hidden md:table-cell text-xs text-muted-foreground">{lead.event_id ? eventMap.get(lead.event_id) || "Unknown" : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
