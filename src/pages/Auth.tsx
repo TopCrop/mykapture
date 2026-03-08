@@ -77,7 +77,8 @@ const AuthPage = () => {
   }
   const handleEmailChange = (value: string) => {
     setEmail(value);
-    if (view === "signup" && value.includes("@")) {
+    // Skip domain validation for invited users
+    if (view === "signup" && value.includes("@") && !inviteOrgId) {
       setEmailError(getEmailDomainError(value));
     } else {
       setEmailError(null);
