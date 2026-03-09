@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const OrgSetupPage = () => {
-  const { user, signOut, isAdmin, userRole } = useAuth();
+  const { user, signOut, userRole } = useAuth();
   const { loading } = useOrg();
   const queryClient = useQueryClient();
   const [orgName, setOrgName] = useState("");
@@ -20,8 +20,6 @@ const OrgSetupPage = () => {
   const [creating, setCreating] = useState(false);
 
   const isSuperAdmin = userRole === "super_admin";
-  const canCreate = isAdmin || isSuperAdmin;
-  const emailDomain = user?.email?.split("@")[1] || "";
 
   if (loading) {
     return (
@@ -40,7 +38,7 @@ const OrgSetupPage = () => {
     if (!user || !orgName.trim() || !domain.trim()) return;
     setCreating(true);
     try {
-      // Create organization
+      // Create organization (starts as 'pending')
       const { data: org, error: orgError } = await supabase
         .from("organizations")
         .insert({ name: orgName.trim(), domain: domain.trim().toLowerCase() })
@@ -60,9 +58,25 @@ const OrgSetupPage = () => {
         .update({ org_id: org.id })
         .eq("user_id", user.id);
 
-      toast.success("Organization created! Redirecting...");
+      // Promote creator to org admin
+      await supabase
+        .from("user_roles")
+        .update({ role: "admin" as const })
+        .eq("user_id", user.id);
+
+      // Notify super admin (fire-and-forget)
+      supabase.functions.invoke("notify-new-org", {
+        body: {
+          org_name: orgName.trim(),
+          domain: domain.trim().toLowerCase(),
+          creator_email: user.email,
+        },
+      }).catch(() => {});
+
+      toast.success("Organization created! Your workspace is ready.");
       queryClient.invalidateQueries({ queryKey: ["org_membership"] });
       queryClient.invalidateQueries({ queryKey: ["organization"] });
+      queryClient.invalidateQueries({ queryKey: ["user_role"] });
     } catch (error: any) {
       if (error.message?.includes("duplicate key")) {
         toast.error("An organization with this domain already exists.");
@@ -79,7 +93,7 @@ const OrgSetupPage = () => {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <KaptureLogo size="lg" />
-          <p className="text-sm text-muted-foreground mt-4">Welcome! Let's set up your workspace.</p>
+          <p className="text-sm text-muted-foreground mt-4">Welcome! Create your workspace to get started.</p>
         </div>
 
         <div className="glass-card rounded-xl p-6 space-y-5">
@@ -90,53 +104,40 @@ const OrgSetupPage = () => {
             <div>
               <h2 className="text-sm font-semibold">Organization Setup</h2>
               <p className="text-[11px] text-muted-foreground">
-                {canCreate
-                  ? "Create your organization to get started."
-                  : "Ask your admin to create your organization, or wait for them to set up the domain matching your email."}
+                Set up your organization to start capturing leads.
               </p>
             </div>
           </div>
 
-          {canCreate ? (
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Organization Name *</Label>
-                <Input
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  placeholder="Acme Corp"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Official Domain *</Label>
-                <Input
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  placeholder="acme.com"
-                />
-                <p className="text-[10px] text-muted-foreground">
-                  Users signing up with @{domain || "yourdomain.com"} will auto-join this org.
-                </p>
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleCreate}
-                disabled={!orgName.trim() || !domain.trim() || creating}
-              >
-                {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Building2 className="mr-2 h-4 w-4" />}
-                Create Organization
-              </Button>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Organization Name *</Label>
+              <Input
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="Acme Corp"
+              />
             </div>
-          ) : (
-            <div className="text-center space-y-3 py-4">
-              <p className="text-sm text-muted-foreground">
-                Your email domain <strong>@{emailDomain}</strong> is not associated with any organization yet.
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Please contact your administrator or ask them to create the organization with your company domain.
+            <div className="space-y-1.5">
+              <Label className="text-xs">Official Domain *</Label>
+              <Input
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                placeholder="acme.com"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Users signing up with @{domain || "yourdomain.com"} will auto-join this org once approved.
               </p>
             </div>
-          )}
+            <Button
+              className="w-full"
+              onClick={handleCreate}
+              disabled={!orgName.trim() || !domain.trim() || creating}
+            >
+              {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Building2 className="mr-2 h-4 w-4" />}
+              Create Organization
+            </Button>
+          </div>
         </div>
 
         <div className="text-center">
