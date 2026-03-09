@@ -29,6 +29,7 @@ const Index = () => {
   const { data: submissions = [] } = useContactSubmissions();
   const { data: followUpBookings = [] } = useFollowUpBookings();
   const { user, isSalesRep, isAdmin, isManager } = useAuth();
+  const { org } = useOrg();
   const [captureOpen, setCaptureOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
 
