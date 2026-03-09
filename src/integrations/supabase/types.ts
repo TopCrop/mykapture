@@ -458,6 +458,7 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      try_assign_user_to_org: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "admin" | "sales_rep" | "manager" | "super_admin"
