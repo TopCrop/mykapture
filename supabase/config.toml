@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.send-invite-email]
 verify_jwt = false
+
+[functions.notify-new-org]
+verify_jwt = false

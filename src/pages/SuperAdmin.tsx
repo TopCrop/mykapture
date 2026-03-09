@@ -92,7 +92,7 @@ const SuperAdminPage = () => {
     try {
       const { error } = await supabase
         .from("organizations")
-        .update({ status })
+        .update({ status } as any)
         .eq("id", orgId);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ["super_admin"] });
