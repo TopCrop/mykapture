@@ -147,7 +147,17 @@ const Index = () => {
   return (
     <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"}>
       <div className="space-y-6">
-        {/* Hero action bar */}
+        {/* Pending org banner */}
+        {org && org.status !== "approved" && (
+          <Alert className="border-yellow-500/50 bg-yellow-500/10 [&>svg]:text-yellow-500">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="text-yellow-400">Workspace Under Review</AlertTitle>
+            <AlertDescription className="text-yellow-300/80">
+              Your workspace is under review. A super admin will approve your organization shortly. Some features may be limited until approval.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-[3px] rounded-full bg-primary" />
