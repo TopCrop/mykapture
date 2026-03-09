@@ -435,6 +435,7 @@ export type Database = {
           org_domain: string
           org_id: string
           org_name: string
+          org_status: string
         }[]
       }
       get_user_org_id: { Args: { _user_id: string }; Returns: string }
