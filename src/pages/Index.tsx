@@ -2,7 +2,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatCard } from "@/components/StatCard";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
 import { useLeads, useEvents, useProfiles, useContactSubmissions, useFollowUpBookings, useMyProfile } from "@/hooks/useData";
-import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus, Mail, UserCheck, Search, Filter, X, Rocket, CalendarPlus, UserPlus } from "lucide-react";
+import { Users, Flame, TrendingUp, Calendar, ArrowRight, Plus, Mail, UserCheck, Search, Filter, X, Rocket, CalendarPlus, UserPlus, AlertTriangle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -11,10 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useState, useMemo } from "react";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { LeadDetailDialog } from "@/components/LeadDetailDialog";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrg } from "@/hooks/useOrg";
 import type { LeadClassification } from "@/types/lead";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -27,6 +29,7 @@ const Index = () => {
   const { data: submissions = [] } = useContactSubmissions();
   const { data: followUpBookings = [] } = useFollowUpBookings();
   const { user, isSalesRep, isAdmin, isManager } = useAuth();
+  const { org } = useOrg();
   const [captureOpen, setCaptureOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
 
@@ -144,7 +147,17 @@ const Index = () => {
   return (
     <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"}>
       <div className="space-y-6">
-        {/* Hero action bar */}
+        {/* Pending org banner */}
+        {org && org.status !== "approved" && (
+          <Alert className="border-yellow-500/50 bg-yellow-500/10 [&>svg]:text-yellow-500">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="text-yellow-400">Workspace Under Review</AlertTitle>
+            <AlertDescription className="text-yellow-300/80">
+              Your workspace is under review. A super admin will approve your organization shortly. Some features may be limited until approval.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-[3px] rounded-full bg-primary" />

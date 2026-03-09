@@ -1,34 +1,30 @@
 
 
-## Plan: Fix Missing `status` Column + Add Pending Org Banner
+## Plan: Connect Project to GitHub
 
-### Critical Bug Fix
+This is a configuration task, not a code change. Here's how to do it:
 
-The `organizations` table is missing a `status` column. Both `handle_new_user()` and `get_all_org_stats()` reference `o.status` / `organizations.status`, causing:
-- **Signup failures** ("Database error saving new user")
-- **SuperAdmin dashboard broken** (400 errors on `get_all_org_stats`)
+### Steps
 
-### Changes
+1. **Open Project Settings**
+   - **Desktop**: Click the project name (top left) → "Settings"
+   - **Mobile**: Tap the project name (top) → "Settings"
 
-#### 1. Database Migration
-Add the missing `status` column to `organizations`:
-```sql
-ALTER TABLE organizations ADD COLUMN status text NOT NULL DEFAULT 'pending';
-```
-Update existing orgs to `'approved'` so current users aren't locked out.
+2. **Go to GitHub tab**
+   - Under the "Connectors" section, click **GitHub**
 
-#### 2. Update `useOrg.tsx`
-Expose `org.status` in the Organization interface and OrgContext so dashboard components can check if the org is pending.
+3. **Authorize Lovable on GitHub**
+   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
 
-#### 3. Add Pending Org Banner to `src/pages/Index.tsx`
-At the top of the dashboard, if `org.status !== 'approved'`, render an alert banner:
-- Yellow/amber styling consistent with the dark theme
-- Message: "Your workspace is under review. A super admin will approve your organization shortly."
-- Non-dismissible (disappears automatically when approved)
+4. **Create Repository**
+   - Select your GitHub account/organization
+   - Click "Create Repository" — this creates a new repo with all your Kapture project code
 
-| Deliverable | File(s) |
-|---|---|
-| Add `status` column to organizations | 1 migration |
-| Expose org status in context | `src/hooks/useOrg.tsx` |
-| Pending org banner on dashboard | `src/pages/Index.tsx` |
+5. **In your other Lovable account**
+   - Create a new project
+   - Go to Settings → GitHub → Connect
+   - Authorize with the same GitHub account
+   - The code will sync automatically via the shared repo
+
+No code changes are needed for this — it's all done through the settings UI.
 

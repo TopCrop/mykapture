@@ -8,6 +8,7 @@ interface Organization {
   name: string;
   domain: string;
   logo_url: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
 }

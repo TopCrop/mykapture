@@ -323,26 +323,32 @@ export type Database = {
       organizations: {
         Row: {
           created_at: string
+          created_by: string | null
           domain: string
           id: string
           logo_url: string | null
           name: string
+          status: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           domain: string
           id?: string
           logo_url?: string | null
           name: string
+          status?: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           domain?: string
           id?: string
           logo_url?: string | null
           name?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -429,11 +435,16 @@ export type Database = {
       get_all_org_stats: {
         Args: never
         Returns: {
+          account_created_at: string
+          admin_email: string
+          admin_name: string
+          creator_email: string
           lead_count: number
           member_count: number
           org_created_at: string
           org_domain: string
           org_id: string
+          org_logo_url: string
           org_name: string
           org_status: string
         }[]
