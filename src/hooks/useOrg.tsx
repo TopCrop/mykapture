@@ -18,6 +18,7 @@ interface OrgContextType {
   orgId: string | null;
   loading: boolean;
   hasOrg: boolean;
+  orgStatus: string | null;
 }
 
 const OrgContext = createContext<OrgContextType>({
@@ -25,6 +26,7 @@ const OrgContext = createContext<OrgContextType>({
   orgId: null,
   loading: true,
   hasOrg: false,
+  orgStatus: null,
 });
 
 export const useOrg = () => useContext(OrgContext);
@@ -87,7 +89,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const loading = membershipLoading || (!membership && fallbackLoading) || (!!orgId && orgLoading);
 
   return (
-    <OrgContext.Provider value={{ org: org ?? null, orgId, loading, hasOrg: !!orgId }}>
+    <OrgContext.Provider value={{ org: org ?? null, orgId, loading, hasOrg: !!orgId, orgStatus: org?.status ?? null }}>
       {children}
     </OrgContext.Provider>
   );

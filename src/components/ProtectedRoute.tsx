@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, userRole } = useAuth();
-  const { hasOrg, loading: orgLoading } = useOrg();
+  const { hasOrg, orgStatus, loading: orgLoading } = useOrg();
 
   if (loading || orgLoading) {
     return (
@@ -28,6 +28,13 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   if (!hasOrg && userRole !== "super_admin") {
     if (window.location.pathname !== "/org-setup") {
       return <Navigate to="/org-setup" replace />;
+    }
+  }
+
+  // If org is pending approval, redirect to pending page
+  if (hasOrg && orgStatus === "pending" && userRole !== "super_admin") {
+    if (window.location.pathname !== "/org-pending") {
+      return <Navigate to="/org-pending" replace />;
     }
   }
 

@@ -58,12 +58,6 @@ const OrgSetupPage = () => {
         .update({ org_id: org.id })
         .eq("user_id", user.id);
 
-      // Promote creator to org admin
-      await supabase
-        .from("user_roles")
-        .update({ role: "admin" as const })
-        .eq("user_id", user.id);
-
       // Notify super admin (fire-and-forget)
       supabase.functions.invoke("notify-new-org", {
         body: {
@@ -73,7 +67,7 @@ const OrgSetupPage = () => {
         },
       }).catch(() => {});
 
-      toast.success("Organization created! Your workspace is ready.");
+      toast.success("Organization created! Pending approval — we'll notify you once it's live.");
       queryClient.invalidateQueries({ queryKey: ["org_membership"] });
       queryClient.invalidateQueries({ queryKey: ["organization"] });
       queryClient.invalidateQueries({ queryKey: ["user_role"] });

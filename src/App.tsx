@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import BrandGuidelines from "./pages/BrandGuidelines";
 import OrgSetupPage from "./pages/OrgSetup";
 import SuperAdminPage from "./pages/SuperAdmin";
+import OrgPendingPage from "./pages/OrgPending";
 import { useEffect } from "react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/org-setup" element={<ProtectedRoute><OrgSetupPage /></ProtectedRoute>} />
+              <Route path="/org-pending" element={<ProtectedRoute><OrgPendingPage /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
