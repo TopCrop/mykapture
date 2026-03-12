@@ -29,17 +29,17 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        max_tokens: 500,
+        model: "google/gemini-2.5-flash",
+        max_tokens: 800,
         messages: [
           {
             role: "system",
-            content: "Transcribe the audio and extract lead info (names, companies, needs, timelines). Call the transcribe_audio tool.",
+            content: "You are a sales meeting note-taker. Listen to the audio and produce concise, well-structured meeting notes in English — NOT a verbatim transcript. The speaker may use any language, but your output MUST always be in English. Summarize key points, action items, and lead details. Call the transcribe_audio tool with your results.",
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Transcribe this voice note and extract lead information." },
+              { type: "text", text: "Listen to this voice note from a sales rep at a conference. Produce structured meeting notes in English with key takeaways and any lead information mentioned." },
               {
                 type: "input_audio",
                 input_audio: {
@@ -55,16 +55,16 @@ serve(async (req) => {
             type: "function",
             function: {
               name: "transcribe_audio",
-              description: "Return transcription and extracted lead details from a voice note",
+              description: "Return structured meeting notes and extracted lead details from a voice note",
               parameters: {
                 type: "object",
                 properties: {
-                  transcription: { type: "string", description: "Full text transcription of the audio" },
+                  transcription: { type: "string", description: "Concise meeting notes in English summarizing key points, NOT a verbatim transcript. Use bullet points or short paragraphs." },
                   extracted_name: { type: "string", description: "Person name mentioned, if any" },
                   extracted_company: { type: "string", description: "Company mentioned, if any" },
                   extracted_needs: { type: "string", description: "Needs or pain points mentioned, if any" },
                   extracted_timeline: { type: "string", description: "Timeline or urgency mentioned, if any" },
-                  summary: { type: "string", description: "Brief 1-2 sentence summary" },
+                  summary: { type: "string", description: "Brief 1-2 sentence summary in English" },
                 },
                 required: ["transcription"],
                 additionalProperties: false,
