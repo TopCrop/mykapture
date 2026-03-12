@@ -1,7 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2 } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads } from "@/hooks/useData";
@@ -10,9 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
+import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import type { AppRole } from "@/hooks/useAuth";
 import { useMemo } from "react";
 import { InviteTeamDialog } from "@/components/InviteTeamDialog";
+import { useOrg } from "@/hooks/useOrg";
 
 const SettingsPage = () => {
   const { isAdmin, isSuperAdmin, user } = useAuth();
