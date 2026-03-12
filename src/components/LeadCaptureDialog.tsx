@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { queueLeadOffline } from "@/lib/offlineQueue";
 import type { LeadClassification } from "@/types/lead";
 
-const NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"];
+const DEFAULT_NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"];
 
 interface LeadCaptureDialogProps {
   open: boolean;
