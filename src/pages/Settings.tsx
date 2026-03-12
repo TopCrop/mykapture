@@ -18,6 +18,7 @@ import { useOrg } from "@/hooks/useOrg";
 
 const SettingsPage = () => {
   const { isAdmin, isSuperAdmin, user } = useAuth();
+  const { orgId } = useOrg();
   const { data: profiles = [] } = useProfiles();
   const { data: roles = [] } = useUserRoles();
   const { data: submissions = [] } = useContactSubmissions();
