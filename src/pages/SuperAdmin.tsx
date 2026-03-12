@@ -507,6 +507,9 @@ const SuperAdminPage = () => {
           <TabsTrigger value="events" className="gap-1.5">
             <CalendarDays className="h-4 w-4" /> Events
           </TabsTrigger>
+          <TabsTrigger value="solutions" className="gap-1.5">
+            <Wrench className="h-4 w-4" /> Solutions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="organizations">
@@ -515,6 +518,10 @@ const SuperAdminPage = () => {
 
         <TabsContent value="events">
           <EventsTab approvedOrgs={approvedOrgs} />
+        </TabsContent>
+
+        <TabsContent value="solutions">
+          <SolutionsTab approvedOrgs={approvedOrgs} />
         </TabsContent>
       </Tabs>
     </DashboardLayout>
