@@ -176,7 +176,7 @@ const AuthPage = () => {
       >
         <div className="text-center space-y-3">
           <div className="mx-auto flex justify-center">
-            <KaptureLogo size="lg" />
+            <Link to="/"><KaptureLogo size="lg" /></Link>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mt-1">
