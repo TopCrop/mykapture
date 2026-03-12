@@ -89,7 +89,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const loading = membershipLoading || (!membership && fallbackLoading) || (!!orgId && orgLoading);
 
   return (
-    <OrgContext.Provider value={{ org: org ?? null, orgId, loading, hasOrg: !!orgId }}>
+    <OrgContext.Provider value={{ org: org ?? null, orgId, loading, hasOrg: !!orgId, orgStatus: org?.status ?? null }}>
       {children}
     </OrgContext.Provider>
   );
