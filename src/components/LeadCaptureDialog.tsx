@@ -489,7 +489,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               <div className="space-y-1.5">
                 <Label className="text-xs">Needs (select all that apply)</Label>
                 <div className="flex flex-wrap gap-2">
-                  {NEED_OPTIONS.map((need) => (
+                  {needOptions.map((need) => (
                     <label key={need} className="flex items-center gap-1.5 text-xs cursor-pointer">
                       <Checkbox checked={needs.includes(need)} onCheckedChange={() => toggleNeed(need)} />
                       <span className="capitalize">{need}</span>
