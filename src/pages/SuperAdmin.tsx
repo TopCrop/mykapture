@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useOrgEvents, useCreateEventForOrg, useUpdateEvent, useDeleteEvent } from "@/hooks/useData";
+import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
