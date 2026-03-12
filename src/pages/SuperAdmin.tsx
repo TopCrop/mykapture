@@ -473,6 +473,38 @@ function EventsTab({ approvedOrgs }: { approvedOrgs: { org_id: string; org_name:
   );
 }
 
+// ─── Solutions Tab ──────────────────────────────────────────────────
+function SolutionsTab({ approvedOrgs }: { approvedOrgs: { org_id: string; org_name: string }[] }) {
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const selectedOrg = approvedOrgs.find((o) => o.org_id === selectedOrgId);
+
+  return (
+    <>
+      <div className="mb-4 max-w-xs">
+        <Select value={selectedOrgId || ""} onValueChange={(v) => setSelectedOrgId(v)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select an organization" />
+          </SelectTrigger>
+          <SelectContent>
+            {approvedOrgs.map((o) => (
+              <SelectItem key={o.org_id} value={o.org_id}>{o.org_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {!selectedOrgId ? (
+        <div className="glass-card p-10 text-center text-sm text-muted-foreground">
+          <Wrench className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+          Select an organization to manage its solution options.
+        </div>
+      ) : (
+        <SolutionOptionsManager orgId={selectedOrgId} orgName={selectedOrg?.org_name} />
+      )}
+    </>
+  );
+}
+
 // ─── Super Admin Page ───────────────────────────────────────────────
 const SuperAdminPage = () => {
   const { data: orgs = [], isLoading } = useOrgStats();
