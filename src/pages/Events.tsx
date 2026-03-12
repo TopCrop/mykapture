@@ -235,7 +235,8 @@ const EventsPage = () => {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="glass-card rounded-xl p-5 space-y-4"
+                  className="glass-card rounded-xl p-5 space-y-4 cursor-pointer hover:border-primary/30 transition-all"
+                  onClick={() => window.location.href = `/leads?event=${event.id}`}
                 >
                   <div className="flex items-start justify-between">
                     <h3 className="font-semibold text-sm">{event.name}</h3>
