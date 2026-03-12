@@ -18,6 +18,7 @@ interface OrgContextType {
   orgId: string | null;
   loading: boolean;
   hasOrg: boolean;
+  orgStatus: string | null;
 }
 
 const OrgContext = createContext<OrgContextType>({
