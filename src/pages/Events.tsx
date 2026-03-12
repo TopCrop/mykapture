@@ -1,7 +1,7 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { useEvents, useLeads, useCreateEvent, useUpdateEvent, useDeleteEvent } from "@/hooks/useData";
 import { motion } from "framer-motion";
-import { MapPin, Calendar as CalendarIcon, Users, Plus, Loader2, Pencil, Trash2, Search } from "lucide-react";
+import { MapPin, Calendar as CalendarIcon, Users, Plus, Loader2, Pencil, Trash2, Search, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,6 +9,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,11 +24,11 @@ type EventRow = Database["public"]["Tables"]["events"]["Row"];
 const EventsPage = () => {
   const { data: events = [], isLoading } = useEvents();
   const { data: leads = [] } = useLeads();
-  const { user, isSalesRep, isAdmin, isManager } = useAuth();
+  const { user, isSalesRep, isAdmin, isManager, isSuperAdmin } = useAuth();
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const deleteEvent = useDeleteEvent();
-  const canManageEvents = isAdmin || isManager;
+  const canManageEvents = isAdmin || isManager || isSuperAdmin;
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,11 +39,26 @@ const EventsPage = () => {
   const [status, setStatus] = useState("upcoming");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedOrgIds, setSelectedOrgIds] = useState<string[]>([]);
 
   useEffect(() => {
     const statusParam = searchParams.get("status");
     if (statusParam) setStatusFilter(statusParam);
   }, [searchParams]);
+
+  // Build unique org list from events (for super admin filter)
+  const orgList = useMemo(() => {
+    if (!isSuperAdmin) return [];
+    const map = new Map<string, string>();
+    for (const ev of events) {
+      const orgId = ev.org_id;
+      const orgName = (ev as any).organizations?.name;
+      if (orgId && orgName && !map.has(orgId)) {
+        map.set(orgId, orgName);
+      }
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [events, isSuperAdmin]);
 
   const filteredEvents = useMemo(() => {
     let result = events;
@@ -52,12 +70,17 @@ const EventsPage = () => {
         (e.location?.toLowerCase().includes(q))
       );
     }
+    // Super admin org filter
+    if (isSuperAdmin && selectedOrgIds.length > 0) {
+      result = result.filter((e) => e.org_id && selectedOrgIds.includes(e.org_id));
+    }
     return result;
-  }, [events, statusFilter, searchQuery]);
+  }, [events, statusFilter, searchQuery, isSuperAdmin, selectedOrgIds]);
 
   const clearUrlFilters = () => {
     setStatusFilter("all");
     setSearchQuery("");
+    setSelectedOrgIds([]);
     setSearchParams({});
   };
 
@@ -108,6 +131,12 @@ const EventsPage = () => {
     }
   };
 
+  const toggleOrgFilter = (orgId: string) => {
+    setSelectedOrgIds((prev) =>
+      prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]
+    );
+  };
+
   const isPending = editingEvent ? updateEvent.isPending : createEvent.isPending;
 
   return (
@@ -116,7 +145,7 @@ const EventsPage = () => {
         <FilterContextBanner labels={{ status: "Status" }} onClear={clearUrlFilters} />
 
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search bar (#11) */}
+          {/* Search bar */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
@@ -126,7 +155,48 @@ const EventsPage = () => {
               className="pl-9 h-9 text-xs"
             />
           </div>
-          {!isSalesRep && (
+
+          {/* Super admin org filter */}
+          {isSuperAdmin && orgList.length > 0 && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 shrink-0">
+                  <Building2 className="h-3.5 w-3.5" />
+                  {selectedOrgIds.length === 0
+                    ? "All Orgs"
+                    : `${selectedOrgIds.length} Org${selectedOrgIds.length > 1 ? "s" : ""}`}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-2" align="end">
+                <div className="space-y-1 max-h-60 overflow-y-auto">
+                  {orgList.map((org) => (
+                    <label
+                      key={org.id}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded-md text-xs cursor-pointer hover:bg-accent transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedOrgIds.includes(org.id)}
+                        onCheckedChange={() => toggleOrgFilter(org.id)}
+                      />
+                      <span className="truncate">{org.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedOrgIds.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full mt-1 h-7 text-xs"
+                    onClick={() => setSelectedOrgIds([])}
+                  >
+                    Clear all
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {canManageEvents && (
             <Button onClick={openCreate} size="sm">
               <Plus className="mr-1.5 h-4 w-4" /> New Event
             </Button>
@@ -157,6 +227,7 @@ const EventsPage = () => {
             {filteredEvents.map((event, i) => {
               const leadCount = leads.filter((l) => l.event_id === event.id).length;
               const hotCount = leads.filter((l) => l.event_id === event.id && l.classification === "hot").length;
+              const orgName = (event as any).organizations?.name;
 
               return (
                 <motion.div
@@ -180,6 +251,13 @@ const EventsPage = () => {
                     </span>
                   </div>
                   <div className="space-y-2 text-xs text-muted-foreground">
+                    {/* Org name for super admin */}
+                    {isSuperAdmin && orgName && (
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-3 w-3" />
+                        <span className="text-foreground/70 font-medium">Org: {orgName}</span>
+                      </div>
+                    )}
                     {event.location && <div className="flex items-center gap-2"><MapPin className="h-3 w-3" />{event.location}</div>}
                     {event.date && <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3" />{new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>}
                     <Link
