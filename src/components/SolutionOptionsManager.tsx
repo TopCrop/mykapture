@@ -111,7 +111,7 @@ export function SolutionOptionsManager({ orgId, orgName }: SolutionOptionsManage
                       autoFocus
                       onKeyDown={(e) => { if (e.key === "Enter") handleUpdate(opt.id); if (e.key === "Escape") setEditingId(null); }}
                     />
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-emerald-400" onClick={() => handleUpdate(opt.id)}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7 text-primary" onClick={() => handleUpdate(opt.id)}>
                       <Check className="h-3.5 w-3.5" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditingId(null)}>
