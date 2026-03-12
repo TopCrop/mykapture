@@ -73,6 +73,7 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<OrgStats | null>(null);
   const queryClient = useQueryClient();
 
   const filtered = useMemo(() => {
