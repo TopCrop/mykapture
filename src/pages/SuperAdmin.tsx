@@ -261,6 +261,16 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
           </div>
         )}
       </motion.div>
+
+      <OrgDetailDialog
+        open={!!selectedOrg}
+        onClose={() => setSelectedOrg(null)}
+        orgId={selectedOrg?.org_id || null}
+        orgName={selectedOrg?.org_name || ""}
+        orgDomain={selectedOrg?.org_domain || ""}
+        orgStatus={selectedOrg?.org_status || ""}
+        orgCreatedAt={selectedOrg?.org_created_at || ""}
+      />
     </>
   );
 }
