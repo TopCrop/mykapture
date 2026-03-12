@@ -164,7 +164,7 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
                   const sc = statusConfig[org.org_status] || statusConfig.pending;
                   const StatusIcon = sc.icon;
                   return (
-                    <tr key={org.org_id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                    <tr key={org.org_id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedOrg(org)}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
