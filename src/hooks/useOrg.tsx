@@ -26,6 +26,7 @@ const OrgContext = createContext<OrgContextType>({
   orgId: null,
   loading: true,
   hasOrg: false,
+  orgStatus: null,
 });
 
 export const useOrg = () => useContext(OrgContext);
