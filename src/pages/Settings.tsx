@@ -148,6 +148,14 @@ const SettingsPage = () => {
               </motion.div>
             </TabsContent>
 
+            <TabsContent value="solutions">
+              {orgId ? (
+                <SolutionOptionsManager orgId={orgId} />
+              ) : (
+                <div className="glass-card p-10 text-center text-sm text-muted-foreground">No organization found.</div>
+              )}
+            </TabsContent>
+
             <TabsContent value="submissions">
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
                 <div className="p-5 pb-3">
