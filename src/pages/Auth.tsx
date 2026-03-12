@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Loader2, ArrowLeft, CheckCircle2, Eye, EyeOff, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import { KaptureLogo } from "@/components/KaptureLogo";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -175,7 +176,7 @@ const AuthPage = () => {
       >
         <div className="text-center space-y-3">
           <div className="mx-auto flex justify-center">
-            <KaptureLogo size="lg" />
+            <Link to="/"><KaptureLogo size="lg" /></Link>
           </div>
           <div>
             <p className="text-sm text-muted-foreground mt-1">
