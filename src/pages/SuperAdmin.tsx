@@ -537,10 +537,10 @@ const SuperAdminPage = () => {
     <DashboardLayout title="Super Admin" subtitle="Platform-wide organization management">
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard title="Organizations" value={isLoading ? "—" : totals.orgs} icon={Building2} />
-        <StatCard title="Pending Approval" value={isLoading ? "—" : totals.pending} icon={Clock} />
-        <StatCard title="Total Members" value={isLoading ? "—" : totals.members} icon={Users} />
-        <StatCard title="Total Leads" value={isLoading ? "—" : totals.leads} icon={Target} />
+        <StatCard title="Organizations" value={isLoading ? "—" : totals.orgs} icon={Building2} href="/super-admin" />
+        <StatCard title="Pending Approval" value={isLoading ? "—" : totals.pending} icon={Clock} href="/super-admin" />
+        <StatCard title="Total Members" value={isLoading ? "—" : totals.members} icon={Users} href="/super-admin" />
+        <StatCard title="Total Leads" value={isLoading ? "—" : totals.leads} icon={Target} href="/leads" />
       </div>
 
       <Tabs defaultValue="organizations" className="space-y-4">

@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Calendar as CalendarIcon, Users, Plus, Loader2, Pencil, Trash2, Search, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -13,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState, useEffect, useMemo } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { FilterContextBanner } from "@/components/FilterContextBanner";
@@ -22,6 +23,7 @@ import type { Database } from "@/integrations/supabase/types";
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 
 const EventsPage = () => {
+  const navigate = useNavigate();
   const { data: events = [], isLoading } = useEvents();
   const { data: leads = [] } = useLeads();
   const { user, isSalesRep, isAdmin, isManager, isSuperAdmin } = useAuth();
@@ -235,7 +237,8 @@ const EventsPage = () => {
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="glass-card rounded-xl p-5 space-y-4"
+                  className="glass-card rounded-xl p-5 space-y-4 cursor-pointer hover:border-primary/30 transition-all"
+                  onClick={() => navigate(`/leads?event=${event.id}`)}
                 >
                   <div className="flex items-start justify-between">
                     <h3 className="font-semibold text-sm">{event.name}</h3>
@@ -260,16 +263,13 @@ const EventsPage = () => {
                     )}
                     {event.location && <div className="flex items-center gap-2"><MapPin className="h-3 w-3" />{event.location}</div>}
                     {event.date && <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3" />{new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>}
-                    <Link
-                      to={`/leads?event=${event.id}`}
-                      className="flex items-center gap-2 hover:text-primary transition-colors group"
-                    >
+                    <div className="flex items-center gap-2">
                       <Users className="h-3 w-3" />
-                      <span className="group-hover:underline">{leadCount} leads captured ({hotCount} hot)</span>
-                    </Link>
+                      <span>{leadCount} leads captured ({hotCount} hot)</span>
+                    </div>
                   </div>
                   {canManageEvents && (
-                    <div className="flex items-center gap-2 pt-1 border-t border-border">
+                    <div className="flex items-center gap-2 pt-1 border-t border-border" onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => openEdit(event)}>
                         <Pencil className="h-3 w-3" /> Edit
                       </Button>
