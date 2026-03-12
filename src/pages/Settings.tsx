@@ -1,7 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2 } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads } from "@/hooks/useData";
@@ -10,12 +10,15 @@ import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
+import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import type { AppRole } from "@/hooks/useAuth";
 import { useMemo } from "react";
 import { InviteTeamDialog } from "@/components/InviteTeamDialog";
+import { useOrg } from "@/hooks/useOrg";
 
 const SettingsPage = () => {
   const { isAdmin, isSuperAdmin, user } = useAuth();
+  const { orgId } = useOrg();
   const { data: profiles = [] } = useProfiles();
   const { data: roles = [] } = useUserRoles();
   const { data: submissions = [] } = useContactSubmissions();
@@ -58,6 +61,7 @@ const SettingsPage = () => {
             <>
               <TabsTrigger value="organization" className="gap-1.5 text-xs"><Building2 className="h-3.5 w-3.5" /> Organization</TabsTrigger>
               <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
+              <TabsTrigger value="solutions" className="gap-1.5 text-xs"><Wrench className="h-3.5 w-3.5" /> Solutions</TabsTrigger>
               <TabsTrigger value="submissions" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> Contact Submissions</TabsTrigger>
               <TabsTrigger value="config" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Configuration</TabsTrigger>
             </>
@@ -142,6 +146,14 @@ const SettingsPage = () => {
                   </div>
                 )}
               </motion.div>
+            </TabsContent>
+
+            <TabsContent value="solutions">
+              {orgId ? (
+                <SolutionOptionsManager orgId={orgId} />
+              ) : (
+                <div className="glass-card p-10 text-center text-sm text-muted-foreground">No organization found.</div>
+              )}
             </TabsContent>
 
             <TabsContent value="submissions">

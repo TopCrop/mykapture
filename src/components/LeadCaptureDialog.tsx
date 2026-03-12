@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore } from "@/hooks/useData";
+import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions } from "@/hooks/useData";
+import { useOrg } from "@/hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import { cn } from "@/lib/utils";
 import { queueLeadOffline } from "@/lib/offlineQueue";
 import type { LeadClassification } from "@/types/lead";
 
-const NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"];
+const DEFAULT_NEED_OPTIONS = ["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"];
 
 interface LeadCaptureDialogProps {
   open: boolean;
@@ -35,6 +36,9 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const createLead = useCreateLead();
   const createBooking = useCreateFollowUpBooking();
   const { data: events } = useEvents();
+  const { orgId } = useOrg();
+  const { data: customOptions = [] } = useOrgSolutionOptions(orgId);
+  const needOptions = customOptions.length > 0 ? customOptions.map((o) => o.label) : DEFAULT_NEED_OPTIONS;
   const [step, setStep] = useState(1);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<"quick" | "full">(mode);
@@ -485,7 +489,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               <div className="space-y-1.5">
                 <Label className="text-xs">Needs (select all that apply)</Label>
                 <div className="flex flex-wrap gap-2">
-                  {NEED_OPTIONS.map((need) => (
+                  {needOptions.map((need) => (
                     <label key={need} className="flex items-center gap-1.5 text-xs cursor-pointer">
                       <Checkbox checked={needs.includes(need)} onCheckedChange={() => toggleNeed(need)} />
                       <span className="capitalize">{need}</span>

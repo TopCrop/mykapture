@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, Target, Search, Trash2, Loader2, CheckCircle2, XCircle, Clock, CalendarDays, Plus, Pencil, MapPin } from "lucide-react";
+import { Building2, Users, Target, Search, Trash2, Loader2, CheckCircle2, XCircle, Clock, CalendarDays, Plus, Pencil, MapPin, Wrench } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useOrgEvents, useCreateEventForOrg, useUpdateEvent, useDeleteEvent } from "@/hooks/useData";
+import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -472,6 +473,38 @@ function EventsTab({ approvedOrgs }: { approvedOrgs: { org_id: string; org_name:
   );
 }
 
+// ─── Solutions Tab ──────────────────────────────────────────────────
+function SolutionsTab({ approvedOrgs }: { approvedOrgs: { org_id: string; org_name: string }[] }) {
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const selectedOrg = approvedOrgs.find((o) => o.org_id === selectedOrgId);
+
+  return (
+    <>
+      <div className="mb-4 max-w-xs">
+        <Select value={selectedOrgId || ""} onValueChange={(v) => setSelectedOrgId(v)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select an organization" />
+          </SelectTrigger>
+          <SelectContent>
+            {approvedOrgs.map((o) => (
+              <SelectItem key={o.org_id} value={o.org_id}>{o.org_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {!selectedOrgId ? (
+        <div className="glass-card p-10 text-center text-sm text-muted-foreground">
+          <Wrench className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
+          Select an organization to manage its solution options.
+        </div>
+      ) : (
+        <SolutionOptionsManager orgId={selectedOrgId} orgName={selectedOrg?.org_name} />
+      )}
+    </>
+  );
+}
+
 // ─── Super Admin Page ───────────────────────────────────────────────
 const SuperAdminPage = () => {
   const { data: orgs = [], isLoading } = useOrgStats();
@@ -506,6 +539,9 @@ const SuperAdminPage = () => {
           <TabsTrigger value="events" className="gap-1.5">
             <CalendarDays className="h-4 w-4" /> Events
           </TabsTrigger>
+          <TabsTrigger value="solutions" className="gap-1.5">
+            <Wrench className="h-4 w-4" /> Solutions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="organizations">
@@ -514,6 +550,10 @@ const SuperAdminPage = () => {
 
         <TabsContent value="events">
           <EventsTab approvedOrgs={approvedOrgs} />
+        </TabsContent>
+
+        <TabsContent value="solutions">
+          <SolutionsTab approvedOrgs={approvedOrgs} />
         </TabsContent>
       </Tabs>
     </DashboardLayout>

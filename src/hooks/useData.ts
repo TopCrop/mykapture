@@ -417,6 +417,78 @@ export function useResendInvitation() {
   });
 }
 
+// ─── Solution Options hooks ────────────────────────────────────────
+export function useOrgSolutionOptions(orgId: string | null) {
+  return useQuery({
+    queryKey: ["solution_options", orgId],
+    queryFn: async () => {
+      if (!orgId) return [];
+      const { data, error } = await supabase
+        .from("org_solution_options" as any)
+        .select("id,org_id,label,sort_order,created_at")
+        .eq("org_id", orgId)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as { id: string; org_id: string; label: string; sort_order: number; created_at: string }[];
+    },
+    enabled: !!orgId,
+    ...CACHE_DEFAULTS,
+  });
+}
+
+export function useCreateSolutionOption() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, Error, { org_id: string; label: string; sort_order: number }>({
+    mutationFn: async ({ org_id, label, sort_order }) => {
+      const { data, error } = await supabase
+        .from("org_solution_options" as any)
+        .insert({ org_id, label, sort_order })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["solution_options", vars.org_id] });
+    },
+  });
+}
+
+export function useUpdateSolutionOption() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, Error, { id: string; label?: string; sort_order?: number; org_id: string }>({
+    mutationFn: async ({ id, label, sort_order }) => {
+      const updates: Record<string, any> = {};
+      if (label !== undefined) updates.label = label;
+      if (sort_order !== undefined) updates.sort_order = sort_order;
+      const { data, error } = await supabase
+        .from("org_solution_options" as any)
+        .update(updates)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["solution_options", vars.org_id] });
+    },
+  });
+}
+
+export function useDeleteSolutionOption() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { id: string; org_id: string }>({
+    mutationFn: async ({ id }) => {
+      const { error } = await supabase.from("org_solution_options" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["solution_options", vars.org_id] });
+    },
+  });
+}
+
 // Lead scoring logic
 export function calculateLeadScore(lead: {
   title?: string | null;
