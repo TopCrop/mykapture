@@ -23,6 +23,7 @@ import type { Database } from "@/integrations/supabase/types";
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
 
 const EventsPage = () => {
+  const navigate = useNavigate();
   const { data: events = [], isLoading } = useEvents();
   const { data: leads = [] } = useLeads();
   const { user, isSalesRep, isAdmin, isManager, isSuperAdmin } = useAuth();
