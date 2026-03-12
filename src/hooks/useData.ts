@@ -283,6 +283,38 @@ export function useCreateEvent() {
   });
 }
 
+export function useOrgEvents(orgId: string | null) {
+  return useQuery({
+    queryKey: ["events", "org", orgId],
+    queryFn: async () => {
+      if (!orgId) return [];
+      const { data, error } = await supabase
+        .from("events")
+        .select("id,name,date,location,status,created_by,created_at,updated_at")
+        .eq("org_id", orgId)
+        .order("date", { ascending: false });
+      if (error) throw error;
+      return data as EventRow[];
+    },
+    enabled: !!orgId,
+    ...CACHE_DEFAULTS,
+  });
+}
+
+export function useCreateEventForOrg() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (event: EventInsert & { org_id: string }) => {
+      const { data, error } = await supabase.from("events").insert(event as any).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    },
+  });
+}
+
 export function useUpdateEvent() {
   const queryClient = useQueryClient();
   return useMutation({
