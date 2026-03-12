@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { useOrgEvents, useCreateEventForOrg, useUpdateEvent, useDeleteEvent } from "@/hooks/useData";
 import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
+import { OrgDetailDialog } from "@/components/OrgDetailDialog";
 import { useAuth } from "@/hooks/useAuth";
 import type { Database } from "@/integrations/supabase/types";
 
@@ -72,6 +73,7 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [selectedOrg, setSelectedOrg] = useState<OrgStats | null>(null);
   const queryClient = useQueryClient();
 
   const filtered = useMemo(() => {
@@ -162,7 +164,7 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
                   const sc = statusConfig[org.org_status] || statusConfig.pending;
                   const StatusIcon = sc.icon;
                   return (
-                    <tr key={org.org_id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors">
+                    <tr key={org.org_id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedOrg(org)}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-2.5">
                           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
@@ -185,7 +187,7 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
                       <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                         {new Date(org.org_created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           {org.org_status === "pending" && (
                             <>
@@ -259,6 +261,16 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
           </div>
         )}
       </motion.div>
+
+      <OrgDetailDialog
+        open={!!selectedOrg}
+        onClose={() => setSelectedOrg(null)}
+        orgId={selectedOrg?.org_id || null}
+        orgName={selectedOrg?.org_name || ""}
+        orgDomain={selectedOrg?.org_domain || ""}
+        orgStatus={selectedOrg?.org_status || ""}
+        orgCreatedAt={selectedOrg?.org_created_at || ""}
+      />
     </>
   );
 }
