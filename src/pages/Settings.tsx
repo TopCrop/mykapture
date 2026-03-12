@@ -61,6 +61,7 @@ const SettingsPage = () => {
             <>
               <TabsTrigger value="organization" className="gap-1.5 text-xs"><Building2 className="h-3.5 w-3.5" /> Organization</TabsTrigger>
               <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
+              <TabsTrigger value="solutions" className="gap-1.5 text-xs"><Wrench className="h-3.5 w-3.5" /> Solutions</TabsTrigger>
               <TabsTrigger value="submissions" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> Contact Submissions</TabsTrigger>
               <TabsTrigger value="config" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Configuration</TabsTrigger>
             </>
