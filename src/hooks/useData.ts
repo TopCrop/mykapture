@@ -429,7 +429,7 @@ export function useOrgSolutionOptions(orgId: string | null) {
         .eq("org_id", orgId)
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return data as { id: string; org_id: string; label: string; sort_order: number; created_at: string }[];
+      return (data ?? []) as unknown as { id: string; org_id: string; label: string; sort_order: number; created_at: string }[];
     },
     enabled: !!orgId,
     ...CACHE_DEFAULTS,

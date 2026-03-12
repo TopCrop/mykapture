@@ -4,6 +4,7 @@ import { Plus, Trash2, Pencil, Loader2, GripVertical, Check, X } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOrgSolutionOptions, useCreateSolutionOption, useUpdateSolutionOption, useDeleteSolutionOption } from "@/hooks/useData";
+import type { UseMutateAsyncFunction } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   AlertDialog,
