@@ -269,7 +269,7 @@ const EventsPage = () => {
                     </div>
                   </div>
                   {canManageEvents && (
-                    <div className="flex items-center gap-2 pt-1 border-t border-border">
+                    <div className="flex items-center gap-2 pt-1 border-t border-border" onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => openEdit(event)}>
                         <Pencil className="h-3 w-3" /> Edit
                       </Button>
