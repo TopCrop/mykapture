@@ -438,8 +438,8 @@ export function useOrgSolutionOptions(orgId: string | null) {
 
 export function useCreateSolutionOption() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ org_id, label, sort_order }: { org_id: string; label: string; sort_order: number }) => {
+  return useMutation<unknown, Error, { org_id: string; label: string; sort_order: number }>({
+    mutationFn: async ({ org_id, label, sort_order }) => {
       const { data, error } = await supabase
         .from("org_solution_options" as any)
         .insert({ org_id, label, sort_order })
@@ -448,7 +448,7 @@ export function useCreateSolutionOption() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_data: any, vars: { org_id: string }) => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["solution_options", vars.org_id] });
     },
   });
@@ -456,8 +456,8 @@ export function useCreateSolutionOption() {
 
 export function useUpdateSolutionOption() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, label, sort_order, org_id }: { id: string; label?: string; sort_order?: number; org_id: string }) => {
+  return useMutation<unknown, Error, { id: string; label?: string; sort_order?: number; org_id: string }>({
+    mutationFn: async ({ id, label, sort_order }) => {
       const updates: Record<string, any> = {};
       if (label !== undefined) updates.label = label;
       if (sort_order !== undefined) updates.sort_order = sort_order;
@@ -470,7 +470,7 @@ export function useUpdateSolutionOption() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_data: any, vars: { org_id: string }) => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["solution_options", vars.org_id] });
     },
   });
@@ -478,12 +478,12 @@ export function useUpdateSolutionOption() {
 
 export function useDeleteSolutionOption() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, org_id }: { id: string; org_id: string }) => {
+  return useMutation<void, Error, { id: string; org_id: string }>({
+    mutationFn: async ({ id }) => {
       const { error } = await supabase.from("org_solution_options" as any).delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: (_data: any, vars: { org_id: string }) => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["solution_options", vars.org_id] });
     },
   });
