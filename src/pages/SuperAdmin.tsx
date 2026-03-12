@@ -187,7 +187,7 @@ function OrganizationsTab({ orgs, isLoading }: { orgs: OrgStats[]; isLoading: bo
                       <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                         {new Date(org.org_created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-5 py-3 text-right">
+                      <td className="px-5 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
                           {org.org_status === "pending" && (
                             <>
