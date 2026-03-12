@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Users, Target, Search, Trash2, Loader2, CheckCircle2, XCircle, Clock, CalendarDays, Plus, Pencil, MapPin } from "lucide-react";
+import { Building2, Users, Target, Search, Trash2, Loader2, CheckCircle2, XCircle, Clock, CalendarDays, Plus, Pencil, MapPin, Wrench } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
