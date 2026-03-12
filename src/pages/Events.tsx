@@ -263,13 +263,10 @@ const EventsPage = () => {
                     )}
                     {event.location && <div className="flex items-center gap-2"><MapPin className="h-3 w-3" />{event.location}</div>}
                     {event.date && <div className="flex items-center gap-2"><CalendarIcon className="h-3 w-3" />{new Date(event.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</div>}
-                    <Link
-                      to={`/leads?event=${event.id}`}
-                      className="flex items-center gap-2 hover:text-primary transition-colors group"
-                    >
+                    <div className="flex items-center gap-2">
                       <Users className="h-3 w-3" />
-                      <span className="group-hover:underline">{leadCount} leads captured ({hotCount} hot)</span>
-                    </Link>
+                      <span>{leadCount} leads captured ({hotCount} hot)</span>
+                    </div>
                   </div>
                   {canManageEvents && (
                     <div className="flex items-center gap-2 pt-1 border-t border-border">
