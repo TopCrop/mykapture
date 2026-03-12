@@ -40,10 +40,10 @@ export function useEvents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("events")
-        .select("id,name,date,location,status,created_by,created_at,updated_at")
+        .select("id,name,date,location,status,created_by,created_at,updated_at,org_id,organizations(name)")
         .order("date", { ascending: false });
       if (error) throw error;
-      return data as EventRow[];
+      return data as (EventRow & { organizations: { name: string } | null })[];
     },
     ...CACHE_DEFAULTS,
   });
