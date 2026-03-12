@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import BrandGuidelines from "./pages/BrandGuidelines";
 import OrgSetupPage from "./pages/OrgSetup";
 import SuperAdminPage from "./pages/SuperAdmin";
+import OrgPendingPage from "./pages/OrgPending";
 import { useEffect } from "react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
