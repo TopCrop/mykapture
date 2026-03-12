@@ -1,43 +1,30 @@
 
 
-## Problem
+## Plan: Connect Project to GitHub
 
-Currently, only admins and managers within an org can create events. But when an org is first approved, there are no admins — all users are `sales_rep` by default (we removed auto-admin promotion). So **nobody in the org can create events**. The super admin needs a way to manage events across all organizations from the Super Admin dashboard.
+This is a configuration task, not a code change. Here's how to do it:
 
-Additionally, the super admin already has RLS access to all events (via the `is_super_admin` policy), and `useCreateEvent` attaches `org_id` from `useOrg()` — but super admin has no org, so they can't create events for other orgs either.
+### Steps
 
-## Solution: Add Event Management to Super Admin Dashboard
+1. **Open Project Settings**
+   - **Desktop**: Click the project name (top left) → "Settings"
+   - **Mobile**: Tap the project name (top) → "Settings"
 
-### 1. Super Admin Dashboard — Add an "Events" management section
+2. **Go to GitHub tab**
+   - Under the "Connectors" section, click **GitHub**
 
-Expand `src/pages/SuperAdmin.tsx` with a tabbed layout (using existing Tabs component):
-- **Tab 1: Organizations** — existing org management table (no changes)
-- **Tab 2: Events** — new event management panel scoped per organization
+3. **Authorize Lovable on GitHub**
+   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
 
-The Events tab will:
-- Show an org selector dropdown (list of approved orgs)
-- Display events for the selected org in a table/card grid
-- Allow creating, editing, and deleting events for that org
-- Reuse the same event form fields (name, location, date, status)
+4. **Create Repository**
+   - Select your GitHub account/organization
+   - Click "Create Repository" — this creates a new repo with all your Kapture project code
 
-### 2. Data layer changes
+5. **In your other Lovable account**
+   - Create a new project
+   - Go to Settings → GitHub → Connect
+   - Authorize with the same GitHub account
+   - The code will sync automatically via the shared repo
 
-Add a new hook `useOrgEvents(orgId)` in `useData.ts` that fetches events filtered by a specific `org_id`. The super admin's existing RLS policy already grants full access.
-
-Add a new `useCreateEventForOrg()` mutation that accepts an explicit `org_id` parameter (instead of deriving it from `useOrg()`), so the super admin can create events under any org.
-
-### 3. No database changes needed
-
-The super admin already has an `ALL` RLS policy on events. No schema or migration changes required.
-
-### Files to modify
-
-| File | Change |
-|---|---|
-| `src/pages/SuperAdmin.tsx` | Add Tabs with Organizations + Events tabs; Events tab with org selector, event list, create/edit/delete |
-| `src/hooks/useData.ts` | Add `useOrgEvents(orgId)` and `useCreateEventForOrg()` hooks |
-
-### 4. Also: Consider role promotion
-
-The super admin should also be able to promote a user to `admin` within an org — otherwise no one can manage events from within the org itself. This is a separate feature but worth flagging. For now, the Events tab on Super Admin solves the immediate need.
+No code changes are needed for this — it's all done through the settings UI.
 
