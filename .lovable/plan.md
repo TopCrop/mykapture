@@ -1,30 +1,60 @@
 
 
-## Plan: Connect Project to GitHub
+## Problem
 
-This is a configuration task, not a code change. Here's how to do it:
+The BANT "Needs" checkboxes in lead capture are hardcoded as: `["automation", "integration", "analytics", "reporting", "marketing", "security", "compliance", "other"]`. Every organization sells different solutions, so these options need to be configurable per-org by managers/admins, and globally by super admins.
 
-### Steps
+## Solution
 
-1. **Open Project Settings**
-   - **Desktop**: Click the project name (top left) → "Settings"
-   - **Mobile**: Tap the project name (top) → "Settings"
+### 1. New database table: `org_solution_options`
 
-2. **Go to GitHub tab**
-   - Under the "Connectors" section, click **GitHub**
+Stores custom solution/need options per organization.
 
-3. **Authorize Lovable on GitHub**
-   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
+```sql
+CREATE TABLE public.org_solution_options (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  label text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+-- RLS: org members can read, admin/manager can manage, super_admin full access
+```
 
-4. **Create Repository**
-   - Select your GitHub account/organization
-   - Click "Create Repository" — this creates a new repo with all your Kapture project code
+When an org has no rows in this table, the app falls back to the current hardcoded defaults.
 
-5. **In your other Lovable account**
-   - Create a new project
-   - Go to Settings → GitHub → Connect
-   - Authorize with the same GitHub account
-   - The code will sync automatically via the shared repo
+### 2. Data hooks (`src/hooks/useData.ts`)
 
-No code changes are needed for this — it's all done through the settings UI.
+- `useOrgSolutionOptions(orgId)` — fetch options for an org
+- `useCreateSolutionOption()` — add a new option
+- `useDeleteSolutionOption()` — remove an option
+- `useUpdateSolutionOption()` — rename or reorder
+
+### 3. Settings UI — new "Solutions" config section
+
+Add a **"Solutions"** tab in `src/pages/Settings.tsx` (visible to admin/manager). It shows the current list of solution options with the ability to:
+- Add a new solution label
+- Delete existing ones
+- Reorder (optional, sort_order)
+
+### 4. Super Admin — solution management per org
+
+In `src/pages/SuperAdmin.tsx`, add a solution options manager within the Events tab or as a third tab, scoped to the selected org. Same CRUD UI.
+
+### 5. Lead Capture integration
+
+In `src/components/LeadCaptureDialog.tsx`:
+- Fetch `useOrgSolutionOptions(orgId)` from the user's org
+- If options exist, use them instead of the hardcoded `NEED_OPTIONS`
+- Fall back to defaults if none configured
+
+### Files to modify/create
+
+| File | Change |
+|---|---|
+| Database migration | Create `org_solution_options` table with RLS |
+| `src/hooks/useData.ts` | Add CRUD hooks for solution options |
+| `src/pages/Settings.tsx` | Add "Solutions" tab for admin/manager |
+| `src/pages/SuperAdmin.tsx` | Add solution management for selected org |
+| `src/components/LeadCaptureDialog.tsx` | Replace hardcoded `NEED_OPTIONS` with dynamic fetch |
 
