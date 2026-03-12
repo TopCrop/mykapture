@@ -116,11 +116,12 @@ const OrgSetupPage = () => {
               <Label className="text-xs">Official Domain *</Label>
               <Input
                 value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                disabled
+                className="opacity-70 cursor-not-allowed"
                 placeholder="acme.com"
               />
               <p className="text-[10px] text-muted-foreground">
-                Users signing up with @{domain || "yourdomain.com"} will auto-join this org once approved.
+                Domain is automatically set from your email address and cannot be changed.
               </p>
             </div>
             <Button
