@@ -145,7 +145,7 @@ const Index = () => {
   const isEmpty = displayLeads.length === 0 && events.length === 0;
 
   return (
-    <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"}>
+    <DashboardLayout title="Dashboard" subtitle={isSalesRep ? "Your Lead Overview" : "Conference Lead Capture"} showBack={false}>
       <div className="space-y-6">
         {/* Pending org banner */}
         {org && org.status !== "approved" && (
