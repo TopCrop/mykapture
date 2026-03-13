@@ -17,7 +17,7 @@ const features = [
   { icon: Zap, title: "BANT Scoring", desc: "Auto-qualify leads with Budget, Authority, Need, Timeline scoring." },
   { icon: BarChart3, title: "Real-Time Analytics", desc: "Track lead quality, rep performance, and event ROI live." },
   { icon: Users, title: "Team Collaboration", desc: "Role-based access for sales reps, managers, and admins." },
-  { icon: Shield, title: "PWA Ready", desc: "Install the app for faster access. Offline lead capture available when installed." },
+  { icon: Shield, title: "PWA Ready", desc: "pwa-install" },
 ];
 
 export default function LandingPage() {
@@ -166,7 +166,23 @@ export default function LandingPage() {
                 <f.icon className="h-4 w-4 text-primary" />
               </div>
               <h3 className="text-sm font-semibold">{f.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+              {f.desc === "pwa-install" ? (
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Install the app for faster access. Offline lead capture available when installed.{" "}
+                  {deferredPrompt ? (
+                    <button
+                      onClick={handleInstall}
+                      className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors font-medium"
+                    >
+                      Install now →
+                    </button>
+                  ) : (
+                    <span className="text-primary/70 italic">Use "Add to Home Screen" in your browser menu to install.</span>
+                  )}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+              )}
             </motion.div>
           ))}
         </div>
