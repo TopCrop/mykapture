@@ -107,15 +107,15 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
     setTranscribing(true);
 
     try {
-      // Check connectivity before upload
+      // Offline fallback: skip upload & transcription, use local blob URL
       if (!navigator.onLine) {
-        await queueVoiceNoteOffline(webmBlob, user.id);
-        toast("You're offline — voice note saved locally and will sync when you're back online.", {
+        const blobUrl = URL.createObjectURL(webmBlob);
+        toast("Voice note saved locally. Will transcribe when back online.", {
           icon: <WifiOff className="h-4 w-4" />,
         });
         onTranscribed(
-          { transcription: "", summary: "Voice note pending — saved offline for later transcription." },
-          "offline-pending"
+          { transcription: "[Voice note recorded offline — transcription pending]" },
+          blobUrl
         );
         discardRecording();
         return;

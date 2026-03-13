@@ -133,9 +133,13 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   };
 
   const processBase64 = async (dataUrl: string) => {
-    // Check connectivity before attempting OCR
+    // Offline fallback: skip OCR, let user fill in manually
     if (!navigator.onLine) {
-      enterManualMode();
+      toast("You're offline — card saved as image. Fill in details manually and submit.", {
+        icon: <WifiOff className="h-4 w-4" />,
+      });
+      onExtracted({});
+      handleClose();
       return;
     }
 
