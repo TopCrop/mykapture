@@ -80,6 +80,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     captured_by_name?: string;
   } | null>(null);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [nameAttempted, setNameAttempted] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced duplicate check (#3)
