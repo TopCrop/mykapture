@@ -4,6 +4,9 @@ import type { Database } from "@/integrations/supabase/types";
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 
 const QUEUE_KEY = "kapture_offline_leads";
+const VOICE_QUEUE_KEY = "kapture_offline_voice_notes";
+
+// ── Lead queue ──
 
 export function queueLeadOffline(lead: LeadInsert) {
   const queue = getOfflineQueue();
@@ -52,14 +55,102 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
   return { synced, failed };
 }
 
-// Auto-sync when coming back online
+// ── Voice note offline queue ──
+
+interface OfflineVoiceNote {
+  base64: string;
+  userId: string;
+  timestamp: string;
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function base64ToBlob(dataUrl: string): Blob {
+  const [header, data] = dataUrl.split(",");
+  const mime = header.match(/:(.*?);/)?.[1] || "audio/webm";
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Blob([bytes], { type: mime });
+}
+
+function getOfflineVoiceNotes(): OfflineVoiceNote[] {
+  try {
+    return JSON.parse(localStorage.getItem(VOICE_QUEUE_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export async function queueVoiceNoteOffline(blob: Blob, userId: string) {
+  const notes = getOfflineVoiceNotes();
+  const base64 = await blobToBase64(blob);
+  notes.push({ base64, userId, timestamp: new Date().toISOString() });
+  localStorage.setItem(VOICE_QUEUE_KEY, JSON.stringify(notes));
+}
+
+export async function syncOfflineVoiceNotes(): Promise<{ synced: number; failed: number }> {
+  const notes = getOfflineVoiceNotes();
+  if (notes.length === 0) return { synced: 0, failed: 0 };
+
+  let synced = 0;
+  let failed = 0;
+  const remaining: OfflineVoiceNote[] = [];
+
+  for (const note of notes) {
+    try {
+      const blob = base64ToBlob(note.base64);
+      const fileName = `${note.userId}/${Date.now()}-${synced}.webm`;
+      const { error } = await supabase.storage
+        .from("voice-notes")
+        .upload(fileName, blob, { contentType: "audio/webm" });
+      if (error) throw error;
+      synced++;
+    } catch {
+      failed++;
+      remaining.push(note);
+    }
+  }
+
+  if (remaining.length > 0) {
+    localStorage.setItem(VOICE_QUEUE_KEY, JSON.stringify(remaining));
+  } else {
+    localStorage.removeItem(VOICE_QUEUE_KEY);
+  }
+
+  return { synced, failed };
+}
+
+// ── Auto-sync when coming back online ──
+
 export function initOfflineSync(onSync?: (result: { synced: number; failed: number }) => void) {
   const handler = async () => {
     const queue = getOfflineQueue();
-    if (queue.length > 0) {
-      const result = await syncOfflineQueue();
-      onSync?.(result);
-    }
+    const voiceNotes = getOfflineVoiceNotes();
+
+    if (queue.length === 0 && voiceNotes.length === 0) return;
+
+    // Sync voice notes first (they don't depend on leads)
+    const voiceResult = await syncOfflineVoiceNotes();
+
+    // Then sync leads
+    const leadResult = await syncOfflineQueue();
+
+    const combined = {
+      synced: leadResult.synced + voiceResult.synced,
+      failed: leadResult.failed + voiceResult.failed,
+    };
+
+    onSync?.(combined);
   };
 
   window.addEventListener("online", handler);

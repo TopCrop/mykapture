@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, X, Video, CircleDot } from "lucide-react";
+import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface ExtractedContact {
@@ -76,6 +78,8 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractedContact | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualContact, setManualContact] = useState<ExtractedContact>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -95,7 +99,6 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       });
       streamRef.current = stream;
       setCameraActive(true);
-      // Attach stream after state update renders the video element
       requestAnimationFrame(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -117,13 +120,25 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     ctx.drawImage(video, 0, 0);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
     stopCamera();
-    // Resize and process
     const resized = await resizeDataUrl(dataUrl, 800, 800, 0.5);
     setPreview(resized);
     processBase64(resized);
   }, [stopCamera]);
 
+  const enterManualMode = () => {
+    setManualMode(true);
+    setScanning(false);
+    setResult(null);
+    toast("You're offline — card scanned but OCR unavailable. Please fill in details manually.", { icon: <WifiOff className="h-4 w-4" /> });
+  };
+
   const processBase64 = async (dataUrl: string) => {
+    // Check connectivity before attempting OCR
+    if (!navigator.onLine) {
+      enterManualMode();
+      return;
+    }
+
     setScanning(true);
     setResult(null);
     try {
@@ -159,7 +174,10 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       toast.success("Business card scanned successfully!");
     } catch (error: any) {
       console.error("Scanner error:", error);
-      if (error.name === "AbortError") {
+      // Network error (TypeError: Failed to fetch) → fall back to manual mode
+      if (error instanceof TypeError || error.name === "TypeError") {
+        enterManualMode();
+      } else if (error.name === "AbortError") {
         toast.error("Scan timed out. Try a clearer photo or upload from gallery.");
       } else {
         toast.error(error.message || "Failed to scan business card");
@@ -186,7 +204,10 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   };
 
   const handleUseContact = () => {
-    if (result) {
+    if (manualMode) {
+      onExtracted(manualContact);
+      handleClose();
+    } else if (result) {
       onExtracted(result);
       handleClose();
     }
@@ -197,6 +218,8 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     setPreview(null);
     setResult(null);
     setScanning(false);
+    setManualMode(false);
+    setManualContact({});
     onClose();
   };
 
@@ -233,7 +256,6 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
                 muted
                 className="w-full max-h-64 object-cover"
               />
-              {/* Viewfinder overlay */}
               <div className="absolute inset-0 pointer-events-none">
                 <div className="absolute inset-4 border-2 border-primary/40 rounded-lg" />
                 <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-primary rounded-tl-lg" />
@@ -253,7 +275,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
           )}
 
           {/* Initial buttons */}
-          {!preview && !scanning && !cameraActive && (
+          {!preview && !scanning && !cameraActive && !manualMode && (
             <div className="flex flex-col gap-3">
               <Button
                 variant="outline"
@@ -285,6 +307,67 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
             <div className="flex items-center justify-center gap-2 py-4">
               <Loader2 className="h-5 w-5 animate-spin text-primary" />
               <span className="text-sm text-muted-foreground">Extracting contact info…</span>
+            </div>
+          )}
+
+          {/* Manual entry form (offline fallback) */}
+          {manualMode && (
+            <div className="glass-card rounded-lg p-4 space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-1.5">
+                <WifiOff className="h-4 w-4 text-warning" /> Manual Entry (Offline)
+              </h4>
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs">Name</Label>
+                  <Input
+                    placeholder="Full name"
+                    value={manualContact.name || ""}
+                    onChange={(e) => setManualContact((c) => ({ ...c, name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Title</Label>
+                  <Input
+                    placeholder="Job title"
+                    value={manualContact.title || ""}
+                    onChange={(e) => setManualContact((c) => ({ ...c, title: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Company</Label>
+                  <Input
+                    placeholder="Company name"
+                    value={manualContact.company || ""}
+                    onChange={(e) => setManualContact((c) => ({ ...c, company: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Email</Label>
+                  <Input
+                    type="email"
+                    placeholder="Email address"
+                    value={manualContact.email || ""}
+                    onChange={(e) => setManualContact((c) => ({ ...c, email: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Phone</Label>
+                  <Input
+                    type="tel"
+                    placeholder="Phone number"
+                    value={manualContact.phone || ""}
+                    onChange={(e) => setManualContact((c) => ({ ...c, phone: e.target.value }))}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <Button size="sm" className="flex-1" onClick={handleUseContact}>
+                  Use This Contact
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => { setManualMode(false); setManualContact({}); setPreview(null); }}>
+                  Cancel
+                </Button>
+              </div>
             </div>
           )}
 

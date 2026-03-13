@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, Play, Pause, Send, Trash2 } from "lucide-react";
+import { Mic, Square, Loader2, Play, Pause, Send, Trash2, WifiOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { queueVoiceNoteOffline } from "@/lib/offlineQueue";
 
 interface TranscriptionResult {
   transcription: string;
@@ -46,7 +47,6 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
         stream.getTracks().forEach((t) => t.stop());
         const webmBlob = new Blob(chunksRef.current, { type: "audio/webm" });
         setRecordedBlob(webmBlob);
-        // Create object URL for playback
         if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
         audioUrlRef.current = URL.createObjectURL(webmBlob);
       };
@@ -107,11 +107,41 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
     setTranscribing(true);
 
     try {
+      // Check connectivity before upload
+      if (!navigator.onLine) {
+        await queueVoiceNoteOffline(webmBlob, user.id);
+        toast("You're offline — voice note saved locally and will sync when you're back online.", {
+          icon: <WifiOff className="h-4 w-4" />,
+        });
+        onTranscribed(
+          { transcription: "", summary: "Voice note pending — saved offline for later transcription." },
+          "offline-pending"
+        );
+        discardRecording();
+        return;
+      }
+
       const fileName = `${user.id}/${Date.now()}.webm`;
       const { error: uploadErr } = await supabase.storage
         .from("voice-notes")
         .upload(fileName, webmBlob, { contentType: "audio/webm" });
-      if (uploadErr) throw uploadErr;
+
+      if (uploadErr) {
+        // Upload failed — could be network issue mid-request
+        if (!navigator.onLine || uploadErr.message?.includes("fetch")) {
+          await queueVoiceNoteOffline(webmBlob, user.id);
+          toast("You're offline — voice note saved locally and will sync when you're back online.", {
+            icon: <WifiOff className="h-4 w-4" />,
+          });
+          onTranscribed(
+            { transcription: "", summary: "Voice note pending — saved offline for later transcription." },
+            "offline-pending"
+          );
+          discardRecording();
+          return;
+        }
+        throw uploadErr;
+      }
 
       const { data: urlData } = await supabase.storage
         .from("voice-notes")
@@ -150,7 +180,24 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
       toast.success("Voice note transcribed!");
     } catch (error: any) {
       console.error("Voice note error:", error);
-      toast.error(error.message || "Failed to process voice note");
+      // Network error fallback
+      if (error instanceof TypeError && !navigator.onLine) {
+        try {
+          await queueVoiceNoteOffline(webmBlob, user.id);
+          toast("You're offline — voice note saved locally and will sync when you're back online.", {
+            icon: <WifiOff className="h-4 w-4" />,
+          });
+          onTranscribed(
+            { transcription: "", summary: "Voice note pending — saved offline for later transcription." },
+            "offline-pending"
+          );
+          discardRecording();
+        } catch {
+          toast.error("Failed to save voice note offline");
+        }
+      } else {
+        toast.error(error.message || "Failed to process voice note");
+      }
     } finally {
       setTranscribing(false);
     }
@@ -167,7 +214,6 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
     );
   }
 
-  // Show playback/submit controls after recording
   if (recordedBlob) {
     return (
       <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50 border">
