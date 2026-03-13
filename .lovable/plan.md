@@ -1,30 +1,20 @@
 
 
-## Plan: Connect Project to GitHub
+## Plan: Update "Offline Ready" Feature Text
 
-This is a configuration task, not a code change. Here's how to do it:
+### Change
 
-### Steps
+**File: `src/pages/Landing.tsx`** — Update the features array entry (around line 20) from:
 
-1. **Open Project Settings**
-   - **Desktop**: Click the project name (top left) → "Settings"
-   - **Mobile**: Tap the project name (top) → "Settings"
+```
+{ icon: Shield, title: "Offline Ready", desc: "Capture leads without internet. Auto-syncs when reconnected." }
+```
 
-2. **Go to GitHub tab**
-   - Under the "Connectors" section, click **GitHub**
+To:
 
-3. **Authorize Lovable on GitHub**
-   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
+```
+{ icon: Shield, title: "PWA Ready", desc: "Install the app for faster access. Offline lead capture available when installed." }
+```
 
-4. **Create Repository**
-   - Select your GitHub account/organization
-   - Click "Create Repository" — this creates a new repo with all your Kapture project code
-
-5. **In your other Lovable account**
-   - Create a new project
-   - Go to Settings → GitHub → Connect
-   - Authorize with the same GitHub account
-   - The code will sync automatically via the shared repo
-
-No code changes are needed for this — it's all done through the settings UI.
+Single line change. No other files affected.
 
