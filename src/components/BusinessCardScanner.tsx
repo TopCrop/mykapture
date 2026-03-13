@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode, Sparkles } from "lucide-react";
+import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import jsQR from "jsqr";
 
@@ -170,7 +170,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const [manualContact, setManualContact] = useState<ExtractedContact>({});
   const [qrMode, setQrMode] = useState(false);
   const [qrSource, setQrSource] = useState<string | null>(null);
-  const [enriching, setEnriching] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrFileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -265,82 +265,22 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     }
   }, [startQrScanLoop]);
 
-
-
-  const enrichLinkedIn = async (url: string): Promise<ExtractedContact | null> => {
-    try {
-      setEnriching(true);
-      toast.info("Enriching from LinkedIn profile…", { icon: <Sparkles className="h-4 w-4" /> });
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enrich-linkedin`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ linkedinUrl: url }),
-        }
-      );
-
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Enrichment failed" }));
-        console.error("Enrichment error:", response.status, err);
-        return null;
-      }
-
-      const data = await response.json();
-      if (data.success && data.contact) {
-        const hasData = Object.values(data.contact).some(Boolean);
-        if (hasData) {
-          toast.success("LinkedIn profile enriched!");
-          return data.contact;
-        }
-      }
-      if (data.message) {
-        toast.info(data.message);
-      }
-      return null;
-    } catch (err) {
-      console.error("Enrichment fetch error:", err);
-      return null;
-    } finally {
-      setEnriching(false);
-    }
-  };
-
-  const handleQrDetected = async (data: string) => {
+  const handleQrDetected = (data: string) => {
     const { contact, source } = parseQRContent(data);
     setQrSource(source);
 
     const hasFields = Object.values(contact).some(Boolean);
     if (hasFields) {
-      // If we got good data (vCard/MECARD), show as result
       if (source === "vCard" || source === "MECARD") {
         setResult(contact);
         toast.success(`QR code decoded (${source}) — contact info extracted!`);
-      } else if (source === "LinkedIn" && contact.website) {
-        // Auto-enrich LinkedIn profiles via Firecrawl + AI
-        const enriched = await enrichLinkedIn(contact.website);
-        if (enriched) {
-          // Merge: enriched data fills gaps, keep website
-          setManualContact({ ...contact, ...enriched, website: contact.website });
-          setManualMode(true);
-        } else {
-          // Enrichment failed — fall back to manual with what we have
-          setManualContact(contact);
-          setManualMode(true);
-          toast.info("Couldn't enrich profile. Complete the details manually.");
-        }
       } else {
-        // Other URL: pre-fill manual form
+        // URL-based (LinkedIn, Lusha, etc.): pre-fill manual form
         setManualContact(contact);
         setManualMode(true);
         toast.success(`${source} link detected! Complete the remaining details.`);
       }
     } else {
-      // Plain text — just show it
       toast.info("QR code detected but no contact info found. Content: " + data.substring(0, 100));
       setManualMode(true);
       setManualContact({});
@@ -580,7 +520,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
           )}
 
           {/* Initial buttons */}
-          {!preview && !scanning && !enriching && !cameraActive && !manualMode && !result && (
+          {!preview && !scanning && !cameraActive && !manualMode && !result && (
             <div className="flex flex-col gap-3">
               <Button
                 variant="outline"
@@ -642,12 +582,8 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
             </div>
           )}
 
-          {enriching && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <Sparkles className="h-5 w-5 animate-pulse text-primary" />
-              <span className="text-sm text-muted-foreground">Enriching LinkedIn profile…</span>
-            </div>
-          )}
+
+
 
 
           {/* Manual entry form (offline fallback or QR URL pre-fill) */}
