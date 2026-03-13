@@ -265,7 +265,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     }
   }, [startQrScanLoop]);
 
-  const [enriching, setEnriching] = useState(false);
+
 
   const enrichLinkedIn = async (url: string): Promise<ExtractedContact | null> => {
     try {
