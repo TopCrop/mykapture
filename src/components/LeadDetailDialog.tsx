@@ -57,6 +57,14 @@ function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () =>
     <div className="space-y-3 pt-2 border-t border-border">
       <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
         <CalendarPlus className="h-3 w-3" /> Schedule Follow-Up
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Info className="h-3 w-3 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-[220px] text-xs normal-case tracking-normal font-normal">
+            Creates an internal reminder visible in your notification bell. Calendar sync coming soon.
+          </TooltipContent>
+        </Tooltip>
       </h4>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">

@@ -508,6 +508,14 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                   <span className="text-sm font-medium flex items-center gap-1.5">
                     <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                     Schedule Follow-Up
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px] text-xs">
+                        Creates an internal reminder visible in your notification bell. Calendar sync coming soon.
+                      </TooltipContent>
+                    </Tooltip>
                   </span>
                 </label>
 
