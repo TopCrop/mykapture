@@ -238,7 +238,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       resetForm();
       onClose();
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("Lead capture failed:", error);
+      toast.error(error.message || "Failed to capture lead. Please try again.");
     }
   };
 

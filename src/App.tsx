@@ -47,7 +47,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
+      <Sonner position="top-center" richColors style={{ zIndex: 9999 }} />
       <AuthProvider>
         <OrgProvider>
           <BrowserRouter>
