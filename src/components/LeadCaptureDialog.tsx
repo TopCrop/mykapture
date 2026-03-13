@@ -430,7 +430,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </Alert>
               )}
 
-              <Button className="w-full" onClick={() => setStep(2)} disabled={!name.trim() || (duplicateInfo?.is_duplicate && duplicateInfo?.is_own)}>
+              <Button className="w-full" onClick={() => { setNameAttempted(true); if (name.trim() && !(duplicateInfo?.is_duplicate && duplicateInfo?.is_own)) setStep(2); }} disabled={duplicateInfo?.is_duplicate && duplicateInfo?.is_own}>
                 Next: Qualification
               </Button>
             </div>
