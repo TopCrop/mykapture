@@ -170,7 +170,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const [manualContact, setManualContact] = useState<ExtractedContact>({});
   const [qrMode, setQrMode] = useState(false);
   const [qrSource, setQrSource] = useState<string | null>(null);
-  const [enriching, setEnriching] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrFileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
