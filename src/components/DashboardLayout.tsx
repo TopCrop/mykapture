@@ -2,9 +2,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { NotificationDropdown } from "@/components/NotificationDropdown";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { Plus } from "lucide-react";
+import { Plus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { LeadCaptureDialog } from "@/components/LeadCaptureDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -13,6 +14,7 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
   title: string;
   subtitle?: string;
+  showBack?: boolean;
 }
 
 export function DashboardLayout({ children, title, subtitle }: DashboardLayoutProps) {
