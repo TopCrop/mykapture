@@ -80,6 +80,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     captured_by_name?: string;
   } | null>(null);
   const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [nameAttempted, setNameAttempted] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Debounced duplicate check (#3)
@@ -153,7 +154,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setDuplicateInfo(null);
     setVoiceNoteUrl(""); setTranscription("");
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
-    setMeetingType("call"); setBookFollowUp(false);
+    setMeetingType("call"); setBookFollowUp(false); setNameAttempted(false);
   };
 
   // Card scan triggers duplicate check (#4)
@@ -292,7 +293,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-1.5">
                   <Label className="text-xs">Full Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" autoFocus />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" autoFocus required />
+                  {nameAttempted && !name.trim() && <p className="text-xs text-destructive">Full name is required</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Company</Label>
@@ -363,7 +365,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-1.5">
                   <Label className="text-xs">Full Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" required />
+                  {nameAttempted && !name.trim() && <p className="text-xs text-destructive">Full name is required</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Title</Label>
@@ -428,7 +431,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </Alert>
               )}
 
-              <Button className="w-full" onClick={() => setStep(2)} disabled={!name.trim() || (duplicateInfo?.is_duplicate && duplicateInfo?.is_own)}>
+              <Button className="w-full" onClick={() => { setNameAttempted(true); if (name.trim() && !(duplicateInfo?.is_duplicate && duplicateInfo?.is_own)) setStep(2); }} disabled={duplicateInfo?.is_duplicate && duplicateInfo?.is_own}>
                 Next: Qualification
               </Button>
             </div>
