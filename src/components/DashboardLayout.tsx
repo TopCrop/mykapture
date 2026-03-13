@@ -17,10 +17,11 @@ interface DashboardLayoutProps {
   showBack?: boolean;
 }
 
-export function DashboardLayout({ children, title, subtitle }: DashboardLayoutProps) {
+export function DashboardLayout({ children, title, subtitle, showBack = true }: DashboardLayoutProps) {
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
   const { isSalesRep } = useAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   return (
     <SidebarProvider>
@@ -33,6 +34,17 @@ export function DashboardLayout({ children, title, subtitle }: DashboardLayoutPr
             {/* Decorative top line */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
             <div className="flex items-center gap-3 z-10">
+              {showBack && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(-1)}
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  aria-label="Go back"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
               <SidebarTrigger />
               <div>
                 <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
