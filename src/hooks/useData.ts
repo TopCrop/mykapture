@@ -55,9 +55,9 @@ export function useProfiles() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id,user_id,display_name,avatar_url,phone,team,territory,created_at,updated_at");
+        .select("id,user_id,display_name,avatar_url,phone,team,territory,created_at,updated_at,org_id,organizations(name)");
       if (error) throw error;
-      return data as ProfileRow[];
+      return data as (ProfileRow & { organizations: { name: string } | null })[];
     },
     ...CACHE_DEFAULTS,
   });
