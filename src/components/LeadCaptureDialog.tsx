@@ -154,7 +154,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setDuplicateInfo(null);
     setVoiceNoteUrl(""); setTranscription("");
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
-    setMeetingType("call"); setBookFollowUp(false);
+    setMeetingType("call"); setBookFollowUp(false); setNameAttempted(false);
   };
 
   // Card scan triggers duplicate check (#4)
