@@ -520,7 +520,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
           )}
 
           {/* Initial buttons */}
-          {!preview && !scanning && !enriching && !cameraActive && !manualMode && !result && (
+          {!preview && !scanning && !cameraActive && !manualMode && !result && (
             <div className="flex flex-col gap-3">
               <Button
                 variant="outline"
