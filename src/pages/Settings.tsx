@@ -108,6 +108,7 @@ const SettingsPage = () => {
                                 <p className="font-medium">{profile.display_name || "—"}</p>
                                 <p className="text-[11px] text-muted-foreground sm:hidden">{profile.phone || "—"}</p>
                               </td>
+                              {isSuperAdmin && <td className="px-5 py-3 hidden md:table-cell text-muted-foreground text-xs">{profile.organizations?.name || "—"}</td>}
                               <td className="px-5 py-3 hidden sm:table-cell text-muted-foreground text-xs">{profile.phone || "—"}</td>
                               <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{profile.team || "—"}</td>
                               <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{profile.territory || "—"}</td>
