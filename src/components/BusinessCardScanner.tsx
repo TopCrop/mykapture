@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode } from "lucide-react";
+import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import jsQR from "jsqr";
 
