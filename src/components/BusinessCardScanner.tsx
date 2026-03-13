@@ -648,7 +648,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
               <span className="text-sm text-muted-foreground">Enriching LinkedIn profile…</span>
             </div>
           )}
-          )}
+
 
           {/* Manual entry form (offline fallback or QR URL pre-fill) */}
           {manualMode && (
