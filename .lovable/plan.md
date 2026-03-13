@@ -1,19 +1,30 @@
 
 
-## Add Tooltips to "Schedule Follow-Up" — Two Locations
+## Plan: Connect Project to GitHub
 
-Both locations where "Schedule Follow-Up" appears as a user-facing action already identified. No additional locations needed.
+This is a configuration task, not a code change. Here's how to do it:
 
-### Changes
+### Steps
 
-**1. `src/components/LeadCaptureDialog.tsx`** (~line 507-510)
-- Wrap the "Schedule Follow-Up" label text with a `Tooltip` containing an `Info` icon
-- Tooltip text: *"Creates an internal reminder visible in your notification bell. Calendar sync coming soon."*
-- Import `Info` from lucide-react, and `Tooltip`/`TooltipTrigger`/`TooltipContent` from UI components
+1. **Open Project Settings**
+   - **Desktop**: Click the project name (top left) → "Settings"
+   - **Mobile**: Tap the project name (top) → "Settings"
 
-**2. `src/components/LeadDetailDialog.tsx`** (~line 56-59)
-- Same treatment on the "Schedule Follow-Up" heading
-- Same tooltip text for consistency
+2. **Go to GitHub tab**
+   - Under the "Connectors" section, click **GitHub**
 
-No new dependencies. Both `Tooltip` components and `Info` icon are already available in the project.
+3. **Authorize Lovable on GitHub**
+   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
+
+4. **Create Repository**
+   - Select your GitHub account/organization
+   - Click "Create Repository" — this creates a new repo with all your Kapture project code
+
+5. **In your other Lovable account**
+   - Create a new project
+   - Go to Settings → GitHub → Connect
+   - Authorize with the same GitHub account
+   - The code will sync automatically via the shared repo
+
+No code changes are needed for this — it's all done through the settings UI.
 

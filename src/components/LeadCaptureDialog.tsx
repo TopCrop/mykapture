@@ -16,7 +16,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClassificationBadge } from "@/components/LeadBadges";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import { VoiceNoteRecorder } from "@/components/VoiceNoteRecorder";
-import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Pencil, Globe } from "lucide-react";
+import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Pencil, Globe, Info } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -507,6 +508,14 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                   <span className="text-sm font-medium flex items-center gap-1.5">
                     <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                     Schedule Follow-Up
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px] text-xs">
+                        Creates an internal reminder visible in your notification bell. Calendar sync coming soon.
+                      </TooltipContent>
+                    </Tooltip>
                   </span>
                 </label>
 
