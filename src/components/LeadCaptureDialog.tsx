@@ -292,7 +292,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2 space-y-1.5">
                   <Label className="text-xs">Full Name *</Label>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" autoFocus />
+                  <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Sarah Chen" autoFocus required />
+                  {nameAttempted && !name.trim() && <p className="text-xs text-destructive">Full name is required</p>}
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Company</Label>
