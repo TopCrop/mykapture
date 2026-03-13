@@ -1,30 +1,25 @@
 
 
-## Plan: Connect Project to GitHub
+## Plan: Add Back Button to DashboardLayout
 
-This is a configuration task, not a code change. Here's how to do it:
+All app pages except Dashboard use `DashboardLayout`. A single change to that component covers every case.
 
-### Steps
+### Changes
 
-1. **Open Project Settings**
-   - **Desktop**: Click the project name (top left) → "Settings"
-   - **Mobile**: Tap the project name (top) → "Settings"
+**1. `src/components/DashboardLayout.tsx`**
+- Add optional `showBack` prop, default `true`
+- When `showBack` is true, render a small `ArrowLeft` button in the header (before the sidebar trigger)
+- On click: `useNavigate()(-1)` — goes to previous page in browser history
 
-2. **Go to GitHub tab**
-   - Under the "Connectors" section, click **GitHub**
+**2. `src/pages/Index.tsx`**
+- Pass `showBack={false}` — Dashboard is the home page, no back needed
 
-3. **Authorize Lovable on GitHub**
-   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
+**No changes needed** for Leads, Events, Analytics, Settings, Documentation, or Super Admin — they all inherit the back button automatically.
 
-4. **Create Repository**
-   - Select your GitHub account/organization
-   - Click "Create Repository" — this creates a new repo with all your Kapture project code
-
-5. **In your other Lovable account**
-   - Create a new project
-   - Go to Settings → GitHub → Connect
-   - Authorize with the same GitHub account
-   - The code will sync automatically via the shared repo
-
-No code changes are needed for this — it's all done through the settings UI.
+### Navigation flows this fixes
+- Dashboard stat cards → Leads (back to Dashboard)
+- Events page → Leads filtered by event (back to Events)
+- Super Admin → any sub-page (back to Super Admin)
+- Notification click → Leads (back to previous page)
+- Any sidebar navigation (back to wherever you came from)
 
