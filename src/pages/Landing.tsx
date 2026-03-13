@@ -17,7 +17,7 @@ const features = [
   { icon: Zap, title: "BANT Scoring", desc: "Auto-qualify leads with Budget, Authority, Need, Timeline scoring." },
   { icon: BarChart3, title: "Real-Time Analytics", desc: "Track lead quality, rep performance, and event ROI live." },
   { icon: Users, title: "Team Collaboration", desc: "Role-based access for sales reps, managers, and admins." },
-  { icon: Shield, title: "Offline Ready", desc: "Capture leads without internet. Auto-syncs when reconnected." },
+  { icon: Shield, title: "PWA Ready", desc: "Install the app for faster access. Offline lead capture available when installed." },
 ];
 
 export default function LandingPage() {
