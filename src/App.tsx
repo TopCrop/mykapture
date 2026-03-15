@@ -67,6 +67,7 @@ const App = () => (
               <Route path="/docs" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><DocumentationPage /></ProtectedRoute>} />
               <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPage /></ProtectedRoute>} />
               <Route path="/brand" element={<BrandGuidelines />} />
+              <Route path="/download-deck" element={<DownloadDeck />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

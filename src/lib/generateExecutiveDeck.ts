@@ -263,7 +263,7 @@ export async function generateExecutiveDeck() {
       fontSize: 18, fontFace: FONT_BODY, color: WHITE,
     });
   });
-  s8.addShape(pptx.shapes.RECTANGLE, {
+  s8.addShape(RECT, {
     x: 4.5, y: 6.0, w: 4, h: 0.04, fill: { color: TEAL },
   });
   s8.addText("KAPTURE", {
