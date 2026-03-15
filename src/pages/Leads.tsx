@@ -123,6 +123,9 @@ const LeadsPage = () => {
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Build event lookup for CSV export
   const eventMap = useMemo(() => {
