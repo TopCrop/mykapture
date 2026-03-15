@@ -27,6 +27,19 @@ const SettingsPage = () => {
   const { data: submissions = [] } = useContactSubmissions();
   const { data: leads = [] } = useLeads();
   const updateRole = useUpdateUserRole();
+  const deleteUser = useDeleteUser();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser.mutateAsync({ user_id: deleteTarget.id });
+      toast.success(`${deleteTarget.name} has been removed`);
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete user");
+    }
+  };
 
   const getUserRole = (userId: string): AppRole => {
     const role = roles.find((r) => r.user_id === userId);
@@ -56,6 +69,23 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout title="Settings" subtitle="System configuration">
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{deleteTarget?.name}</strong>? This will remove their account, profile, roles, and org membership. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteUser.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "profile"} className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="h-3.5 w-3.5" /> Profile</TabsTrigger>
@@ -98,6 +128,7 @@ const SettingsPage = () => {
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Role</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Leads</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Joined</th>
+                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider w-10"></th>
                         </tr>
                       </thead>
                       <tbody>
