@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads } from "@/hooks/useData";
+import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads, useDeleteUser } from "@/hooks/useData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
