@@ -18,6 +18,7 @@ import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import BrandGuidelines from "./pages/BrandGuidelines";
+import DownloadDeck from "./pages/DownloadDeck";
 import OrgSetupPage from "./pages/OrgSetup";
 import SuperAdminPage from "./pages/SuperAdmin";
 import OrgPendingPage from "./pages/OrgPending";
@@ -66,6 +67,7 @@ const App = () => (
               <Route path="/docs" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><DocumentationPage /></ProtectedRoute>} />
               <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPage /></ProtectedRoute>} />
               <Route path="/brand" element={<BrandGuidelines />} />
+              <Route path="/download-deck" element={<DownloadDeck />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
