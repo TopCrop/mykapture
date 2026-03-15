@@ -43,7 +43,7 @@ export async function generateExecutiveDeck() {
     x: 1, y: 4.3, w: 11, h: 0.5,
     fontSize: 16, fontFace: FONT_BODY, color: MUTED, align: "center",
   });
-  s1.addShape(pptx.shapes.RECTANGLE, {
+  s1.addShape(RECT, {
     x: 4.5, y: 5.2, w: 4, h: 0.04, fill: { color: TEAL },
   });
   addFooter(s1, 1, TOTAL);
