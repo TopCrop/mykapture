@@ -315,6 +315,12 @@ const LeadsPage = () => {
               </SelectContent>
             </Select>
           )}
+          {isAdmin && selectedLeads.size > 0 && (
+            <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setBulkDeleteOpen(true)} disabled={bulkDeleting}>
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Delete selected ({selectedLeads.size})
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="gap-1.5 hover:bg-secondary">
             <Download className="h-4 w-4" /> Export
           </Button>
