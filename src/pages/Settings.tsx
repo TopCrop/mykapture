@@ -1,7 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads, useDeleteUser } from "@/hooks/useData";

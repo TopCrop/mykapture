@@ -476,6 +476,24 @@ export function useUpdateSolutionOption() {
   });
 }
 
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, { user_id: string }>({
+    mutationFn: async ({ user_id }) => {
+      const { data, error } = await supabase.functions.invoke("delete-user", {
+        body: { user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["user_roles"] });
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+    },
+  });
+}
+
 export function useDeleteSolutionOption() {
   const queryClient = useQueryClient();
   return useMutation<void, Error, { id: string; org_id: string }>({
