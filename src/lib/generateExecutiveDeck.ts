@@ -165,7 +165,7 @@ export async function generateExecutiveDeck() {
   ];
   roles.forEach((r, i) => {
     const y = 1.8 + i * 1.1;
-    s5.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    s5.addShape(ROUNDED_RECT, {
       x: 0.8, y, w: 11.4, h: 0.9, fill: { color: DARK_CARD }, rectRadius: 0.1,
     });
     s5.addText(r[0], {
