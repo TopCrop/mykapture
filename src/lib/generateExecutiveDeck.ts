@@ -248,7 +248,7 @@ export async function generateExecutiveDeck() {
     x: 1, y: 1.5, w: 11, h: 0.8,
     fontSize: 36, fontFace: FONT_HEADING, color: TEAL, bold: true, align: "center",
   });
-  s8.addShape(pptx.shapes.RECTANGLE, {
+  s8.addShape(RECT, {
     x: 4.5, y: 2.5, w: 4, h: 0.04, fill: { color: TEAL },
   });
   const nextSteps = [
