@@ -185,8 +185,49 @@ const LeadsPage = () => {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedLeads = filtered.slice((safeCurrentPage - 1) * LEADS_PER_PAGE, safeCurrentPage * LEADS_PER_PAGE);
 
-  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); };
-  const handleClassFilter = (value: string) => { setClassFilter(value); setCurrentPage(1); };
+  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); setSelectedLeads(new Set()); };
+  const handleClassFilter = (value: string) => { setClassFilter(value); setCurrentPage(1); setSelectedLeads(new Set()); };
+
+  // Clear selections when page changes
+  useEffect(() => { setSelectedLeads(new Set()); }, [currentPage, eventFilter, repFilter, followupFilter]);
+
+  const toggleLeadSelection = (id: string) => {
+    setSelectedLeads((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLeads.size === paginatedLeads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(paginatedLeads.map((l) => l.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const id of selectedLeads) {
+      try {
+        await deleteLead.mutateAsync(id);
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    setSelectedLeads(new Set());
+    if (failCount === 0) {
+      toast.success(`Deleted ${successCount} lead${successCount !== 1 ? "s" : ""}`);
+    } else {
+      toast.warning(`Deleted ${successCount}, failed ${failCount}`);
+    }
+  };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
