@@ -1,5 +1,8 @@
 import pptxgen from "pptxgenjs";
 
+const RECT = "rect" as const;
+const ROUNDED_RECT = "roundRect" as const;
+
 const BG = "141620";
 const TEAL = "2DD4A0";
 const WHITE = "EAEEF4";
