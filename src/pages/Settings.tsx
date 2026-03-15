@@ -1,10 +1,10 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads } from "@/hooks/useData";
+import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads, useDeleteUser } from "@/hooks/useData";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { EmailIntegrations } from "@/components/EmailIntegrations";
@@ -12,8 +12,11 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
 import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import type { AppRole } from "@/hooks/useAuth";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { InviteTeamDialog } from "@/components/InviteTeamDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useOrg } from "@/hooks/useOrg";
 
 const SettingsPage = () => {
@@ -24,6 +27,19 @@ const SettingsPage = () => {
   const { data: submissions = [] } = useContactSubmissions();
   const { data: leads = [] } = useLeads();
   const updateRole = useUpdateUserRole();
+  const deleteUser = useDeleteUser();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const handleDeleteUser = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteUser.mutateAsync({ user_id: deleteTarget.id });
+      toast.success(`${deleteTarget.name} has been removed`);
+      setDeleteTarget(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete user");
+    }
+  };
 
   const getUserRole = (userId: string): AppRole => {
     const role = roles.find((r) => r.user_id === userId);
@@ -53,6 +69,23 @@ const SettingsPage = () => {
 
   return (
     <DashboardLayout title="Settings" subtitle="System configuration">
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to permanently delete <strong>{deleteTarget?.name}</strong>? This will remove their account, profile, roles, and org membership. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleteUser.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Tabs defaultValue={new URLSearchParams(window.location.search).get("tab") || "profile"} className="space-y-4">
         <TabsList>
           <TabsTrigger value="profile" className="gap-1.5 text-xs"><User className="h-3.5 w-3.5" /> Profile</TabsTrigger>
@@ -95,6 +128,7 @@ const SettingsPage = () => {
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Role</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Leads</th>
                           <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Joined</th>
+                          <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider w-10"></th>
                         </tr>
                       </thead>
                       <tbody>
@@ -139,6 +173,18 @@ const SettingsPage = () => {
                               </td>
                               <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="px-2 py-3">
+                                {!isCurrentUser && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    onClick={() => setDeleteTarget({ id: profile.user_id, name: profile.display_name || "User" })}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
                               </td>
                             </tr>
                           );
