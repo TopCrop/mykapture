@@ -186,6 +186,7 @@ const SettingsPage = () => {
                                   </Button>
                                 )}
                               </td>
+                            </tr>
                           );
                         })}
                       </tbody>
