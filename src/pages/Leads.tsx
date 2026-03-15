@@ -353,6 +353,15 @@ const LeadsPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
+                      {isAdmin && (
+                        <th className="px-3 py-3 w-10">
+                          <Checkbox
+                            checked={paginatedLeads.length > 0 && selectedLeads.size === paginatedLeads.length}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label="Select all leads"
+                          />
+                        </th>
+                      )}
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
@@ -366,7 +375,16 @@ const LeadsPage = () => {
                   </thead>
                   <tbody>
                     {paginatedLeads.map((lead) => (
-                      <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <tr key={lead.id} className={`border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer ${selectedLeads.has(lead.id) ? "bg-primary/5" : ""}`} onClick={() => setSelectedLead(lead)}>
+                        {isAdmin && (
+                          <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedLeads.has(lead.id)}
+                              onCheckedChange={() => toggleLeadSelection(lead.id)}
+                              aria-label={`Select ${lead.name}`}
+                            />
+                          </td>
+                        )}
                         <td className="px-5 py-3">
                           <p className="font-medium">{lead.name}</p>
                           <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
