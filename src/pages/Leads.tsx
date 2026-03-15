@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -122,6 +123,9 @@ const LeadsPage = () => {
   const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [captureOpen, setCaptureOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   // Build event lookup for CSV export
   const eventMap = useMemo(() => {
@@ -181,8 +185,49 @@ const LeadsPage = () => {
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedLeads = filtered.slice((safeCurrentPage - 1) * LEADS_PER_PAGE, safeCurrentPage * LEADS_PER_PAGE);
 
-  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); };
-  const handleClassFilter = (value: string) => { setClassFilter(value); setCurrentPage(1); };
+  const handleSearch = (value: string) => { setSearch(value); setCurrentPage(1); setSelectedLeads(new Set()); };
+  const handleClassFilter = (value: string) => { setClassFilter(value); setCurrentPage(1); setSelectedLeads(new Set()); };
+
+  // Clear selections when page changes
+  useEffect(() => { setSelectedLeads(new Set()); }, [currentPage, eventFilter, repFilter, followupFilter]);
+
+  const toggleLeadSelection = (id: string) => {
+    setSelectedLeads((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedLeads.size === paginatedLeads.length) {
+      setSelectedLeads(new Set());
+    } else {
+      setSelectedLeads(new Set(paginatedLeads.map((l) => l.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkDeleting(true);
+    let successCount = 0;
+    let failCount = 0;
+    for (const id of selectedLeads) {
+      try {
+        await deleteLead.mutateAsync(id);
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+    setBulkDeleting(false);
+    setBulkDeleteOpen(false);
+    setSelectedLeads(new Set());
+    if (failCount === 0) {
+      toast.success(`Deleted ${successCount} lead${successCount !== 1 ? "s" : ""}`);
+    } else {
+      toast.warning(`Deleted ${successCount}, failed ${failCount}`);
+    }
+  };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -270,6 +315,12 @@ const LeadsPage = () => {
               </SelectContent>
             </Select>
           )}
+          {isAdmin && selectedLeads.size > 0 && (
+            <Button variant="destructive" size="sm" className="gap-1.5" onClick={() => setBulkDeleteOpen(true)} disabled={bulkDeleting}>
+              {bulkDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Delete selected ({selectedLeads.size})
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={exportCsv} disabled={filtered.length === 0} className="gap-1.5 hover:bg-secondary">
             <Download className="h-4 w-4" /> Export
           </Button>
@@ -302,6 +353,15 @@ const LeadsPage = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border text-left">
+                      {isAdmin && (
+                        <th className="px-3 py-3 w-10">
+                          <Checkbox
+                            checked={paginatedLeads.length > 0 && selectedLeads.size === paginatedLeads.length}
+                            onCheckedChange={toggleSelectAll}
+                            aria-label="Select all leads"
+                          />
+                        </th>
+                      )}
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Name</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Company</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
@@ -315,7 +375,16 @@ const LeadsPage = () => {
                   </thead>
                   <tbody>
                     {paginatedLeads.map((lead) => (
-                      <tr key={lead.id} className="border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer" onClick={() => setSelectedLead(lead)}>
+                      <tr key={lead.id} className={`border-b border-border last:border-0 hover:bg-secondary/30 transition-colors cursor-pointer ${selectedLeads.has(lead.id) ? "bg-primary/5" : ""}`} onClick={() => setSelectedLead(lead)}>
+                        {isAdmin && (
+                          <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedLeads.has(lead.id)}
+                              onCheckedChange={() => toggleLeadSelection(lead.id)}
+                              aria-label={`Select ${lead.name}`}
+                            />
+                          </td>
+                        )}
                         <td className="px-5 py-3">
                           <p className="font-medium">{lead.name}</p>
                           <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
@@ -394,6 +463,23 @@ const LeadsPage = () => {
 
       <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} />
       <LeadCaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedLeads.size} Lead{selectedLeads.size !== 1 ? "s" : ""}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedLeads.size} selected lead{selectedLeads.size !== 1 ? "s" : ""}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {bulkDeleting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Deleting...</> : `Delete ${selectedLeads.size}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   );
 };
