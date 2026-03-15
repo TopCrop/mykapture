@@ -136,7 +136,7 @@ export async function generateExecutiveDeck() {
     const row = Math.floor(i / 2);
     const x = 0.8 + col * 6;
     const y = 1.6 + row * 1.3;
-    s4.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    s4.addShape(ROUNDED_RECT, {
       x, y, w: 5.6, h: 1.1, fill: { color: DARK_CARD }, rectRadius: 0.1,
     });
     s4.addText(f[0], {
