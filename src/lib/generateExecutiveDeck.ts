@@ -63,7 +63,7 @@ export async function generateExecutiveDeck() {
   ];
   problems.forEach((p, i) => {
     const y = 1.6 + i * 1.15;
-    s2.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    s2.addShape(ROUNDED_RECT, {
       x: 0.8, y, w: 11.4, h: 0.95, fill: { color: DARK_CARD }, rectRadius: 0.1,
     });
     s2.addText(p.title, {
