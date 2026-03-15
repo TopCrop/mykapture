@@ -1,30 +1,19 @@
 
 
-## Plan: Connect Project to GitHub
+## Plan: Add Bulk Delete to Leads Page (Admin & Super Admin Only)
 
-This is a configuration task, not a code change. Here's how to do it:
+### Changes
 
-### Steps
+**`src/pages/Leads.tsx`**
+- Add `selectedLeads` state (`Set<string>`) and `bulkDeleting` state
+- Add a checkbox column (visible only for admins/super admins) with:
+  - "Select all" checkbox in the header (selects all on current page)
+  - Per-row checkbox (each lead)
+- Add a "Delete selected (N)" button next to the Export/Capture buttons, shown only when selections exist
+- Add an `AlertDialog` for bulk delete confirmation listing how many leads will be deleted
+- Implement `handleBulkDelete` that iterates through selected IDs calling `deleteLead.mutateAsync` for each, with success/failure count feedback
+- Highlight selected rows with `bg-primary/5`
+- Clear selections when filters/page change
 
-1. **Open Project Settings**
-   - **Desktop**: Click the project name (top left) → "Settings"
-   - **Mobile**: Tap the project name (top) → "Settings"
-
-2. **Go to GitHub tab**
-   - Under the "Connectors" section, click **GitHub**
-
-3. **Authorize Lovable on GitHub**
-   - Click "Connect" and authorize the Lovable GitHub App on your GitHub account
-
-4. **Create Repository**
-   - Select your GitHub account/organization
-   - Click "Create Repository" — this creates a new repo with all your Kapture project code
-
-5. **In your other Lovable account**
-   - Create a new project
-   - Go to Settings → GitHub → Connect
-   - Authorize with the same GitHub account
-   - The code will sync automatically via the shared repo
-
-No code changes are needed for this — it's all done through the settings UI.
+The existing `isAdmin` flag from `useAuth()` already covers both admin and super_admin roles, so no new permission logic is needed. The RLS policy on leads already restricts DELETE to admins within their org + super admins.
 
