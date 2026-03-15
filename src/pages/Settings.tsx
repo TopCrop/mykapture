@@ -12,8 +12,11 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
 import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import type { AppRole } from "@/hooks/useAuth";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { InviteTeamDialog } from "@/components/InviteTeamDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useOrg } from "@/hooks/useOrg";
 
 const SettingsPage = () => {
