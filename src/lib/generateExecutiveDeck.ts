@@ -96,7 +96,7 @@ export async function generateExecutiveDeck() {
   ];
   steps.forEach((s, i) => {
     const x = 0.8 + i * 3;
-    s3.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    s3.addShape(ROUNDED_RECT, {
       x, y: 2.3, w: 2.6, h: 2.8, fill: { color: DARK_CARD }, rectRadius: 0.15,
     });
     s3.addText(s.label, {
