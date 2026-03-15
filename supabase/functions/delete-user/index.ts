@@ -2,12 +2,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
@@ -63,19 +63,39 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Delete related data (cascades handle most, but be explicit)
-    await adminClient.from("user_roles").delete().eq("user_id", user_id);
-    await adminClient.from("org_members").delete().eq("user_id", user_id);
-    await adminClient.from("profiles").delete().eq("user_id", user_id);
+    // Delete related data - handle follow_up_bookings and leads first (no cascade)
+    console.log("Deleting follow_up_bookings for user:", user_id);
+    const { error: fubErr } = await adminClient.from("follow_up_bookings").delete().eq("booked_by", user_id);
+    if (fubErr) console.error("follow_up_bookings delete error:", fubErr);
+
+    console.log("Deleting leads for user:", user_id);
+    const { error: leadsErr } = await adminClient.from("leads").delete().eq("captured_by", user_id);
+    if (leadsErr) console.error("leads delete error:", leadsErr);
+
+    console.log("Deleting user_roles for user:", user_id);
+    const { error: rolesErr } = await adminClient.from("user_roles").delete().eq("user_id", user_id);
+    if (rolesErr) console.error("user_roles delete error:", rolesErr);
+
+    console.log("Deleting org_members for user:", user_id);
+    const { error: orgErr } = await adminClient.from("org_members").delete().eq("user_id", user_id);
+    if (orgErr) console.error("org_members delete error:", orgErr);
+
+    console.log("Deleting profiles for user:", user_id);
+    const { error: profErr } = await adminClient.from("profiles").delete().eq("user_id", user_id);
+    if (profErr) console.error("profiles delete error:", profErr);
 
     // Delete from auth
+    console.log("Deleting auth user:", user_id);
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(user_id);
     if (deleteError) {
+      console.error("Auth delete error:", deleteError);
       return new Response(JSON.stringify({ error: deleteError.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    console.log("User deleted successfully:", user_id);
     return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err) {
+    console.error("Caught error:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
