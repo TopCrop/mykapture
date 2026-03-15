@@ -231,7 +231,7 @@ export async function generateExecutiveDeck() {
     "Scales from 5-person teams to enterprise-wide deployment",
   ];
   scalePoints.forEach((p, i) => {
-    s7.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
+    s7.addShape(ROUNDED_RECT, {
       x: 0.8, y: 1.7 + i * 0.82, w: 11.4, h: 0.65, fill: { color: DARK_CARD }, rectRadius: 0.08,
     });
     s7.addText(`✓  ${p}`, {
