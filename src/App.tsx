@@ -18,6 +18,7 @@ import AuthPage from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import BrandGuidelines from "./pages/BrandGuidelines";
+import DownloadDeck from "./pages/DownloadDeck";
 import OrgSetupPage from "./pages/OrgSetup";
 import SuperAdminPage from "./pages/SuperAdmin";
 import OrgPendingPage from "./pages/OrgPending";
