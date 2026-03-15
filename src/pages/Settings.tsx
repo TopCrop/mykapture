@@ -174,7 +174,18 @@ const SettingsPage = () => {
                               <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">
                                 {new Date(profile.created_at).toLocaleDateString()}
                               </td>
-                            </tr>
+                              <td className="px-2 py-3">
+                                {!isCurrentUser && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    onClick={() => setDeleteTarget({ id: profile.user_id, name: profile.display_name || "User" })}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </td>
                           );
                         })}
                       </tbody>
