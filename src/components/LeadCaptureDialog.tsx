@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
@@ -33,13 +33,18 @@ interface LeadCaptureDialogProps {
 }
 
 export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureDialogProps) {
-  const { user } = useAuth();
+  const { user, isSalesRep } = useAuth();
   const createLead = useCreateLead();
   const createBooking = useCreateFollowUpBooking();
   const { data: events } = useEvents();
   const { orgId } = useOrg();
   const { data: customOptions = [] } = useOrgSolutionOptions(orgId);
   const needOptions = customOptions.length > 0 ? customOptions.map((o) => o.label) : DEFAULT_NEED_OPTIONS;
+  const visibleEvents = useMemo(() => {
+    if (!events) return [];
+    if (isSalesRep) return events.filter((e) => e.status === 'active');
+    return events;
+  }, [events, isSalesRep]);
   const [step, setStep] = useState(1);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<"quick" | "full">(mode);
@@ -120,6 +125,17 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
+
+  // Clear eventId if selected event is completed
+  useEffect(() => {
+    if (eventId && events) {
+      const selected = events.find((e) => e.id === eventId);
+      if (selected?.status === 'completed') {
+        setEventId("");
+        toast.warning("That event has ended. Please select an active event.");
+      }
+    }
+  }, [eventId, events]);
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
@@ -394,12 +410,18 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Event</Label>
-                <Select value={eventId} onValueChange={handleEventChange}>
+                <Select value={eventId} onValueChange={handleEventChange} disabled={isSalesRep && visibleEvents.length === 0}>
                   <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
                   <SelectContent>
-                    {events?.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                    ))}
+                    {isSalesRep && visibleEvents.length === 0 ? (
+                      <SelectItem value="__none__" disabled>No active events — contact your admin</SelectItem>
+                    ) : (
+                      visibleEvents.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name}{!isSalesRep ? ` (${e.status})` : ""}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
