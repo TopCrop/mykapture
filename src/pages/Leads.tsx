@@ -135,6 +135,13 @@ const LeadsPage = () => {
     return map;
   }, [events]);
 
+  // Build profile lookup for rep names
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach((p) => map.set(p.user_id, p.display_name || "Unknown"));
+    return map;
+  }, [profiles]);
+
   // Build unique reps list for filter
   const uniqueReps = useMemo(() => {
     const repIds = [...new Set(leads.map((l) => l.captured_by))];
