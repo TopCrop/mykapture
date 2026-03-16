@@ -33,7 +33,7 @@ interface LeadCaptureDialogProps {
 }
 
 export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureDialogProps) {
-  const { user } = useAuth();
+  const { user, isSalesRep } = useAuth();
   const createLead = useCreateLead();
   const createBooking = useCreateFollowUpBooking();
   const { data: events } = useEvents();
