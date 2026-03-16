@@ -55,7 +55,7 @@ export function DashboardLayout({ children, title, subtitle, showBack = true }: 
               <NotificationDropdown />
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6 geo-dots relative">
+          <main className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 geo-dots relative">
             {children}
           </main>
 
