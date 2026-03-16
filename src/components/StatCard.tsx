@@ -62,7 +62,7 @@ export function StatCard({ title, value, change, changeType = "neutral", icon: I
   );
 
   const cardClasses = cn(
-    "glass-card p-5 relative overflow-hidden group transition-all duration-300",
+    "glass-card p-5 relative overflow-hidden group transition-all duration-300 min-w-0",
     href
       ? "cursor-pointer hover:border-primary/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5"
       : "hover:border-primary/20"
