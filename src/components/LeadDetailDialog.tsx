@@ -121,6 +121,7 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
   const [editData, setEditData] = useState<Partial<LeadRow>>({});
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
+  const [viewOriginalLead, setViewOriginalLead] = useState<LeadRow | null>(null);
   const updateLead = useUpdateLead();
   const updateFollowUp = useUpdateFollowUpBooking();
   const { data: followUps = [] } = useFollowUpBookings(lead?.id);
@@ -128,7 +129,6 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
   if (!lead) return null;
   const event = events.find((e) => e.id === lead.event_id);
   const originalLead = (lead as any).duplicate_of ? allLeads.find((l) => l.id === (lead as any).duplicate_of) : null;
-  const [viewOriginalLead, setViewOriginalLead] = useState<LeadRow | null>(null);
 
   const bantLabels: Record<string, Record<string, string>> = {
     budget: { confirmed: "Confirmed", exploring: "Exploring", no_budget: "No Budget" },
