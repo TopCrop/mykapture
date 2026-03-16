@@ -51,6 +51,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [website, setWebsite] = useState("");
+  const [currentSolution, setCurrentSolution] = useState("");
 
   // BANT
   const [budget, setBudget] = useState("");
