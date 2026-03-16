@@ -113,7 +113,7 @@ const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
   const { data: profiles = [] } = useProfiles();
-  const { user, isSalesRep, isAdmin } = useAuth();
+  const { user, isSalesRep, isAdmin, isManager } = useAuth();
   const deleteLead = useDeleteLead();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
