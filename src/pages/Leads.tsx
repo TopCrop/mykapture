@@ -387,8 +387,15 @@ const LeadsPage = () => {
                           </td>
                         )}
                         <td className="px-5 py-3">
-                          <p className="font-medium">{lead.name}</p>
-                          <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
+                          <div className="flex items-center gap-1.5">
+                            <div>
+                              <p className="font-medium">{lead.name}</p>
+                              <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
+                            </div>
+                            {(lead as any).is_duplicate && (
+                              <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500 shrink-0">Duplicate</Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
                         <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
