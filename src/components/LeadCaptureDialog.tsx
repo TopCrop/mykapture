@@ -40,6 +40,11 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const { orgId } = useOrg();
   const { data: customOptions = [] } = useOrgSolutionOptions(orgId);
   const needOptions = customOptions.length > 0 ? customOptions.map((o) => o.label) : DEFAULT_NEED_OPTIONS;
+  const visibleEvents = useMemo(() => {
+    if (!events) return [];
+    if (isSalesRep) return events.filter((e) => e.status === 'active');
+    return events;
+  }, [events, isSalesRep]);
   const [step, setStep] = useState(1);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<"quick" | "full">(mode);
