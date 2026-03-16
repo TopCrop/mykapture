@@ -249,7 +249,7 @@ const LeadsPage = () => {
 
   // CSV export with event name resolution (#13)
   const exportCsv = () => {
-    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Is Duplicate", "Duplicate Of", "Captured At"];
+    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured By", "Is Duplicate", "Duplicate Of", "Captured At"];
     const leadsMap = new Map(filtered.map((l) => [l.id, l]));
     const rows = filtered.map((l) => {
       const dupOfLead = (l as any).duplicate_of ? leadsMap.get((l as any).duplicate_of) : null;
@@ -258,6 +258,7 @@ const LeadsPage = () => {
         l.event_id ? eventMap.get(l.event_id) || "Unknown" : "No Event",
         l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
         l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
+        profileMap.get(l.captured_by) || "Unknown",
         (l as any).is_duplicate ? "Yes" : "No",
         dupOfLead ? dupOfLead.name : "",
         new Date(l.created_at).toLocaleString(),
