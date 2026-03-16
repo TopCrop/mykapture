@@ -640,7 +640,15 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Key takeaways from the conversation..." rows={3} />
               </div>
 
-              {voiceNoteUrl && (
+              {!voiceNoteUrl ? (
+                <div className="space-y-1.5">
+                  <Label className="text-xs flex items-center gap-1.5">
+                    <Mic className="h-3.5 w-3.5 text-muted-foreground" />
+                    Add Voice Note (optional)
+                  </Label>
+                  <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                </div>
+              ) : (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Mic className="h-3.5 w-3.5 text-primary" />
                   <span>Voice note attached</span>
