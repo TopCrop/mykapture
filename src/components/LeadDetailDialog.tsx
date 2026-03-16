@@ -406,5 +406,16 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
         </div>
       </DialogContent>
     </Dialog>
+
+      {viewOriginalLead && (
+        <LeadDetailDialog
+          lead={viewOriginalLead}
+          open={!!viewOriginalLead}
+          onClose={() => setViewOriginalLead(null)}
+          events={events}
+          allLeads={allLeads}
+        />
+      )}
+    </>
   );
 }
