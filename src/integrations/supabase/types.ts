@@ -200,6 +200,7 @@ export type Database = {
           classification: string
           company: string | null
           created_at: string
+          current_solution: string | null
           email: string | null
           event_id: string | null
           follow_up_email_sent: boolean | null
@@ -228,6 +229,7 @@ export type Database = {
           classification?: string
           company?: string | null
           created_at?: string
+          current_solution?: string | null
           email?: string | null
           event_id?: string | null
           follow_up_email_sent?: boolean | null
@@ -256,6 +258,7 @@ export type Database = {
           classification?: string
           company?: string | null
           created_at?: string
+          current_solution?: string | null
           email?: string | null
           event_id?: string | null
           follow_up_email_sent?: boolean | null
