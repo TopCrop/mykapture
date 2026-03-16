@@ -1,0 +1,2 @@
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS is_duplicate BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.leads ADD COLUMN IF NOT EXISTS duplicate_of UUID REFERENCES public.leads(id);

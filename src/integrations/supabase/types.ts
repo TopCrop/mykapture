@@ -201,11 +201,13 @@ export type Database = {
           company: string | null
           created_at: string
           current_solution: string | null
+          duplicate_of: string | null
           email: string | null
           event_id: string | null
           follow_up_email_sent: boolean | null
           follow_up_email_sent_at: string | null
           id: string
+          is_duplicate: boolean | null
           name: string
           notes: string | null
           org_id: string | null
@@ -230,11 +232,13 @@ export type Database = {
           company?: string | null
           created_at?: string
           current_solution?: string | null
+          duplicate_of?: string | null
           email?: string | null
           event_id?: string | null
           follow_up_email_sent?: boolean | null
           follow_up_email_sent_at?: string | null
           id?: string
+          is_duplicate?: boolean | null
           name: string
           notes?: string | null
           org_id?: string | null
@@ -259,11 +263,13 @@ export type Database = {
           company?: string | null
           created_at?: string
           current_solution?: string | null
+          duplicate_of?: string | null
           email?: string | null
           event_id?: string | null
           follow_up_email_sent?: boolean | null
           follow_up_email_sent_at?: string | null
           id?: string
+          is_duplicate?: boolean | null
           name?: string
           notes?: string | null
           org_id?: string | null
@@ -278,6 +284,13 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_duplicate_of_fkey"
+            columns: ["duplicate_of"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_event_id_fkey"
             columns: ["event_id"]
