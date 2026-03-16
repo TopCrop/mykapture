@@ -315,7 +315,7 @@ const LeadsPage = () => {
               ))}
             </SelectContent>
           </Select>
-          {isAdmin && (
+          {(isAdmin || isManager) && (
             <Select value={repFilter} onValueChange={(v) => { setRepFilter(v); setCurrentPage(1); }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="h-4 w-4 mr-2" />
