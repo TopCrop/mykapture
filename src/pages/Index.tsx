@@ -108,9 +108,10 @@ const Index = () => {
         if (eventLoc !== filterLocation) return false;
       }
       if (filterClassification !== "all" && lead.classification !== filterClassification) return false;
+      if (filterRep !== "all" && lead.captured_by !== filterRep) return false;
       return true;
     });
-  }, [displayLeads, searchQuery, filterMonth, filterEvent, filterLocation, filterClassification, eventMap]);
+  }, [displayLeads, searchQuery, filterMonth, filterEvent, filterLocation, filterClassification, filterRep, eventMap]);
 
   const hasActiveFilters = searchQuery || filterMonth !== "all" || filterEvent !== "all" || filterLocation !== "all" || filterClassification !== "all";
 
