@@ -399,12 +399,18 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Event</Label>
-                <Select value={eventId} onValueChange={handleEventChange}>
+                <Select value={eventId} onValueChange={handleEventChange} disabled={isSalesRep && visibleEvents.length === 0}>
                   <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
                   <SelectContent>
-                    {events?.map((e) => (
-                      <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
-                    ))}
+                    {isSalesRep && visibleEvents.length === 0 ? (
+                      <SelectItem value="__none__" disabled>No active events — contact your admin</SelectItem>
+                    ) : (
+                      visibleEvents.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name}{!isSalesRep ? ` (${e.status})` : ""}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
