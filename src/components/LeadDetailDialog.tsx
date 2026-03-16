@@ -116,7 +116,7 @@ function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () =>
   );
 }
 
-export function LeadDetailDialog({ lead, open, onClose, events }: LeadDetailDialogProps) {
+export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }: LeadDetailDialogProps) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<LeadRow>>({});
   const [showFollowUp, setShowFollowUp] = useState(false);
