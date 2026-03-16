@@ -48,14 +48,14 @@ export function DashboardLayout({ children, title, subtitle, showBack = true }: 
               <SidebarTrigger />
               <div>
                 <h1 className="text-sm font-semibold tracking-tight">{title}</h1>
-                {subtitle && <p className="text-[11px] text-muted-foreground">{subtitle}</p>}
+                {subtitle && <p className="text-[11px] text-muted-foreground truncate max-w-[180px] sm:max-w-none">{subtitle}</p>}
               </div>
             </div>
             <div className="flex items-center gap-2 z-10">
               <NotificationDropdown />
             </div>
           </header>
-          <main className="flex-1 overflow-auto p-4 md:p-6 geo-dots relative">
+          <main className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 geo-dots relative">
             {children}
           </main>
 

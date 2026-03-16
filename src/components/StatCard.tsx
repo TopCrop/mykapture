@@ -27,7 +27,7 @@ export function StatCard({ title, value, change, changeType = "neutral", icon: I
 
       <div className="flex items-start justify-between relative z-10">
         <div className="space-y-1.5">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</p>
           <p className="text-2xl font-bold tracking-tight">{value}</p>
           {change && (
             <p
@@ -62,7 +62,7 @@ export function StatCard({ title, value, change, changeType = "neutral", icon: I
   );
 
   const cardClasses = cn(
-    "glass-card p-5 relative overflow-hidden group transition-all duration-300",
+    "glass-card p-5 relative overflow-hidden group transition-all duration-300 min-w-0",
     href
       ? "cursor-pointer hover:border-primary/30 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/5"
       : "hover:border-primary/20"
