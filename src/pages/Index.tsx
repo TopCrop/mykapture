@@ -462,6 +462,7 @@ const Index = () => {
                       </td>
                       <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
                       <td className="px-5 py-3"><ScoreBadge score={lead.score} /></td>
+                      {(isAdmin || isManager) && <td className="px-5 py-3 text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
                       <td className="px-5 py-3"><SyncBadge status={lead.sync_status as any} /></td>
                     </tr>
                   ))}
