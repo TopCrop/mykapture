@@ -24,6 +24,7 @@ interface LeadDetailDialogProps {
   open: boolean;
   onClose: () => void;
   events: EventRow[];
+  allLeads?: LeadRow[];
 }
 
 function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
