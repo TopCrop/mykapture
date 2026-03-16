@@ -196,6 +196,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       email: email || null,
       phone: phone || null,
       website: website || null,
+      current_solution: currentSolution || null,
       bant_budget: budget || null,
       bant_authority: authority || null,
       bant_need: needs.length > 0 ? needs : null,
