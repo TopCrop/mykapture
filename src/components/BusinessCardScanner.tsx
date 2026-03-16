@@ -319,12 +319,20 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const capturePhoto = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    // Crop to viewfinder region (inset-4 = 16px on all sides)
+    const inset = 16;
+    const scaleX = video.videoWidth / video.clientWidth;
+    const scaleY = video.videoHeight / video.clientHeight;
+    const sx = inset * scaleX;
+    const sy = inset * scaleY;
+    const sWidth = (video.clientWidth - inset * 2) * scaleX;
+    const sHeight = (video.clientHeight - inset * 2) * scaleY;
+    const croppedCanvas = document.createElement("canvas");
+    croppedCanvas.width = sWidth;
+    croppedCanvas.height = sHeight;
+    const croppedCtx = croppedCanvas.getContext("2d")!;
+    croppedCtx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+    const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.8);
     stopCamera();
     const resized = await resizeDataUrl(dataUrl, 800, 800, 0.5);
     setPreview(resized);
