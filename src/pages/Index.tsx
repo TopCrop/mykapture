@@ -411,8 +411,15 @@ const Index = () => {
                       onClick={() => setSelectedLead(lead)}
                     >
                       <td className="px-5 py-3">
-                        <p className="font-medium text-sm">{lead.name}</p>
-                        <p className="text-[11px] text-muted-foreground">{lead.title}</p>
+                        <div className="flex items-center gap-1.5">
+                          <div>
+                            <p className="font-medium text-sm">{lead.name}</p>
+                            <p className="text-[11px] text-muted-foreground">{lead.title}</p>
+                          </div>
+                          {(lead as any).is_duplicate && (
+                            <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500 shrink-0">Duplicate</Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-5 py-3 text-sm text-muted-foreground">{lead.company}</td>
                       <td className="px-5 py-3">
@@ -441,7 +448,7 @@ const Index = () => {
         </motion.div>
       </div>
 
-      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} />
+      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} allLeads={displayLeads} />
       <LeadCaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
     </DashboardLayout>
   );

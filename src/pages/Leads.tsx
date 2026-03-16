@@ -6,7 +6,8 @@ import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, Filter, Plus, Mail, Loader2, Check, Download, Pencil, Trash2, ChevronLeft, ChevronRight, Copy } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
@@ -241,14 +242,20 @@ const LeadsPage = () => {
 
   // CSV export with event name resolution (#13)
   const exportCsv = () => {
-    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured At"];
-    const rows = filtered.map((l) => [
-      l.name, l.title || "", l.company || "", l.email || "", l.phone || "",
-      l.event_id ? eventMap.get(l.event_id) || "Unknown" : "No Event",
-      l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
-      l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
-      new Date(l.created_at).toLocaleString(),
-    ]);
+    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Is Duplicate", "Duplicate Of", "Captured At"];
+    const leadsMap = new Map(filtered.map((l) => [l.id, l]));
+    const rows = filtered.map((l) => {
+      const dupOfLead = (l as any).duplicate_of ? leadsMap.get((l as any).duplicate_of) : null;
+      return [
+        l.name, l.title || "", l.company || "", l.email || "", l.phone || "",
+        l.event_id ? eventMap.get(l.event_id) || "Unknown" : "No Event",
+        l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
+        l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
+        (l as any).is_duplicate ? "Yes" : "No",
+        dupOfLead ? dupOfLead.name : "",
+        new Date(l.created_at).toLocaleString(),
+      ];
+    });
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -386,8 +393,15 @@ const LeadsPage = () => {
                           </td>
                         )}
                         <td className="px-5 py-3">
-                          <p className="font-medium">{lead.name}</p>
-                          <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
+                          <div className="flex items-center gap-1.5">
+                            <div>
+                              <p className="font-medium">{lead.name}</p>
+                              <p className="text-[11px] text-muted-foreground md:hidden">{lead.company}</p>
+                            </div>
+                            {(lead as any).is_duplicate && (
+                              <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500 shrink-0">Duplicate</Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-5 py-3 hidden md:table-cell text-muted-foreground">{lead.company}</td>
                         <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
@@ -461,7 +475,7 @@ const LeadsPage = () => {
         </motion.div>
       </div>
 
-      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} />
+      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} allLeads={leads} />
       <LeadCaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>

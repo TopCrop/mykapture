@@ -24,6 +24,7 @@ interface LeadDetailDialogProps {
   open: boolean;
   onClose: () => void;
   events: EventRow[];
+  allLeads?: LeadRow[];
 }
 
 function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
@@ -115,17 +116,19 @@ function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () =>
   );
 }
 
-export function LeadDetailDialog({ lead, open, onClose, events }: LeadDetailDialogProps) {
+export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }: LeadDetailDialogProps) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<LeadRow>>({});
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
+  const [viewOriginalLead, setViewOriginalLead] = useState<LeadRow | null>(null);
   const updateLead = useUpdateLead();
   const updateFollowUp = useUpdateFollowUpBooking();
   const { data: followUps = [] } = useFollowUpBookings(lead?.id);
 
   if (!lead) return null;
   const event = events.find((e) => e.id === lead.event_id);
+  const originalLead = (lead as any).duplicate_of ? allLeads.find((l) => l.id === (lead as any).duplicate_of) : null;
 
   const bantLabels: Record<string, Record<string, string>> = {
     budget: { confirmed: "Confirmed", exploring: "Exploring", no_budget: "No Budget" },
@@ -183,6 +186,7 @@ export function LeadDetailDialog({ lead, open, onClose, events }: LeadDetailDial
   const completedFollowUps = followUps.filter((f) => f.status === "completed");
 
   return (
+    <>
     <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
@@ -293,6 +297,20 @@ export function LeadDetailDialog({ lead, open, onClose, events }: LeadDetailDial
                 )}
               </div>
 
+              {(lead as any).is_duplicate && (
+                <div className="flex items-center gap-2 p-2 rounded-md border border-amber-500/30 bg-amber-500/5">
+                  <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500 shrink-0">Duplicate</Badge>
+                  {originalLead && (
+                    <button
+                      className="text-xs text-primary hover:underline cursor-pointer"
+                      onClick={() => setViewOriginalLead(originalLead)}
+                    >
+                      View original lead →
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="brand-line" />
 
               <div>
@@ -389,5 +407,16 @@ export function LeadDetailDialog({ lead, open, onClose, events }: LeadDetailDial
         </div>
       </DialogContent>
     </Dialog>
+
+      {viewOriginalLead && (
+        <LeadDetailDialog
+          lead={viewOriginalLead}
+          open={!!viewOriginalLead}
+          onClose={() => setViewOriginalLead(null)}
+          events={events}
+          allLeads={allLeads}
+        />
+      )}
+    </>
   );
 }
