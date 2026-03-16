@@ -288,6 +288,9 @@ export function LeadDetailDialog({ lead, open, onClose, events }: LeadDetailDial
                 <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Phone</span><p className="font-medium mt-0.5">{lead.phone || "—"}</p></div>
                 <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Event</span><p className="font-medium mt-0.5">{event?.name || "—"}</p></div>
                 <div><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Captured</span><p className="font-medium mt-0.5">{new Date(lead.created_at).toLocaleDateString()}</p></div>
+                {(lead as any).current_solution && (
+                  <div className="col-span-2"><span className="text-muted-foreground text-[11px] uppercase tracking-wider">Current Solution</span><p className="font-medium mt-0.5">{(lead as any).current_solution}</p></div>
+                )}
               </div>
 
               <div className="brand-line" />
