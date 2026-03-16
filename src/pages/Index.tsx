@@ -59,6 +59,18 @@ const Index = () => {
     return locs;
   }, [events]);
 
+  // Build profile lookup
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach((p) => map.set(p.user_id, p.display_name || "Unknown"));
+    return map;
+  }, [profiles]);
+
+  const uniqueReps = useMemo(() => {
+    const repIds = [...new Set(displayLeads.map((l) => l.captured_by))];
+    return repIds.map((id) => ({ id, name: profileMap.get(id) || "Unknown" }));
+  }, [displayLeads, profileMap]);
+
   const uniqueMonths = useMemo(() => {
     const months = new Set<string>();
     displayLeads.forEach((l) => {
