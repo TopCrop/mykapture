@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode } from "lucide-react";
+import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode, Download } from "lucide-react";
 import { toast } from "sonner";
 import jsQR from "jsqr";
 
@@ -319,12 +319,20 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const capturePhoto = useCallback(async () => {
     const video = videoRef.current;
     if (!video) return;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    // Crop to viewfinder region (inset-4 = 16px on all sides)
+    const inset = 16;
+    const scaleX = video.videoWidth / video.clientWidth;
+    const scaleY = video.videoHeight / video.clientHeight;
+    const sx = inset * scaleX;
+    const sy = inset * scaleY;
+    const sWidth = (video.clientWidth - inset * 2) * scaleX;
+    const sHeight = (video.clientHeight - inset * 2) * scaleY;
+    const croppedCanvas = document.createElement("canvas");
+    croppedCanvas.width = sWidth;
+    croppedCanvas.height = sHeight;
+    const croppedCtx = croppedCanvas.getContext("2d")!;
+    croppedCtx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
+    const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.8);
     stopCamera();
     const resized = await resizeDataUrl(dataUrl, 800, 800, 0.5);
     setPreview(resized);
@@ -689,6 +697,16 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
                 <Button size="sm" className="flex-1" onClick={handleUseContact}>
                   Use This Contact
                 </Button>
+                {preview && (
+                  <Button size="sm" variant="outline" onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = preview;
+                    link.download = `business-card-${Date.now()}.jpg`;
+                    link.click();
+                  }}>
+                    <Download className="h-3.5 w-3.5 mr-1" /> Save Photo
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => { setPreview(null); setResult(null); setQrMode(false); setQrSource(null); }}>
                   Rescan
                 </Button>
