@@ -387,6 +387,19 @@ const Index = () => {
                   <SelectItem value="cold">Cold</SelectItem>
                 </SelectContent>
               </Select>
+              {(isAdmin || isManager) && (
+                <Select value={filterRep} onValueChange={setFilterRep}>
+                  <SelectTrigger className="h-7 w-[140px] text-[11px]">
+                    <SelectValue placeholder="Rep" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All reps</SelectItem>
+                    {uniqueReps.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" className="h-7 text-[11px] gap-1 text-muted-foreground" onClick={clearFilters}>
                   <X className="h-3 w-3" /> Clear
