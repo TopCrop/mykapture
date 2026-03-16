@@ -113,7 +113,7 @@ const Index = () => {
     });
   }, [displayLeads, searchQuery, filterMonth, filterEvent, filterLocation, filterClassification, filterRep, eventMap]);
 
-  const hasActiveFilters = searchQuery || filterMonth !== "all" || filterEvent !== "all" || filterLocation !== "all" || filterClassification !== "all";
+  const hasActiveFilters = searchQuery || filterMonth !== "all" || filterEvent !== "all" || filterLocation !== "all" || filterClassification !== "all" || filterRep !== "all";
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -121,6 +121,7 @@ const Index = () => {
     setFilterEvent("all");
     setFilterLocation("all");
     setFilterClassification("all");
+    setFilterRep("all");
   };
 
   const hotLeads = displayLeads.filter((l) => l.classification === "hot").length;
