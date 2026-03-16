@@ -296,6 +296,20 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
                 )}
               </div>
 
+              {(lead as any).is_duplicate && (
+                <div className="flex items-center gap-2 p-2 rounded-md border border-amber-500/30 bg-amber-500/5">
+                  <Badge variant="outline" className="text-[9px] border-amber-500/50 text-amber-500 shrink-0">Duplicate</Badge>
+                  {originalLead && (
+                    <button
+                      className="text-xs text-primary hover:underline cursor-pointer"
+                      onClick={() => setViewOriginalLead(originalLead)}
+                    >
+                      View original lead →
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div className="brand-line" />
 
               <div>
