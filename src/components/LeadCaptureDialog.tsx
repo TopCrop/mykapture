@@ -150,7 +150,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const resetForm = () => {
     setStep(1);
     setCaptureMode(mode);
-    setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone(""); setWebsite("");
+    setName(""); setTitle(""); setCompany(""); setEmail(""); setPhone(""); setWebsite(""); setCurrentSolution("");
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
     setDuplicateInfo(null);
