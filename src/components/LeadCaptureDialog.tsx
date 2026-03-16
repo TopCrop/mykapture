@@ -126,6 +126,17 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     };
   }, []);
 
+  // Clear eventId if selected event is completed
+  useEffect(() => {
+    if (eventId && events) {
+      const selected = events.find((e) => e.id === eventId);
+      if (selected?.status === 'completed') {
+        setEventId("");
+        toast.warning("That event has ended. Please select an active event.");
+      }
+    }
+  }, [eventId, events]);
+
   const handleEmailChange = (val: string) => {
     setEmail(val);
     checkDuplicate(val, phone, eventId);
