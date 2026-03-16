@@ -39,6 +39,7 @@ const Index = () => {
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [filterLocation, setFilterLocation] = useState<string>("all");
   const [filterClassification, setFilterClassification] = useState<string>("all");
+  const [filterRep, setFilterRep] = useState<string>("all");
 
   const displayLeads = leads;
 
