@@ -448,7 +448,7 @@ const Index = () => {
         </motion.div>
       </div>
 
-      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} />
+      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} allLeads={displayLeads} />
       <LeadCaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
     </DashboardLayout>
   );

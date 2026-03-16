@@ -475,7 +475,7 @@ const LeadsPage = () => {
         </motion.div>
       </div>
 
-      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} />
+      <LeadDetailDialog lead={selectedLead} open={!!selectedLead} onClose={() => setSelectedLead(null)} events={events} allLeads={leads} />
       <LeadCaptureDialog open={captureOpen} onClose={() => setCaptureOpen(false)} />
 
       <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
