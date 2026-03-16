@@ -39,6 +39,7 @@ const Index = () => {
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [filterLocation, setFilterLocation] = useState<string>("all");
   const [filterClassification, setFilterClassification] = useState<string>("all");
+  const [filterRep, setFilterRep] = useState<string>("all");
 
   const displayLeads = leads;
 
@@ -57,6 +58,18 @@ const Index = () => {
     const locs = [...new Set(events.map((e) => e.location).filter(Boolean))] as string[];
     return locs;
   }, [events]);
+
+  // Build profile lookup
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach((p) => map.set(p.user_id, p.display_name || "Unknown"));
+    return map;
+  }, [profiles]);
+
+  const uniqueReps = useMemo(() => {
+    const repIds = [...new Set(displayLeads.map((l) => l.captured_by))];
+    return repIds.map((id) => ({ id, name: profileMap.get(id) || "Unknown" }));
+  }, [displayLeads, profileMap]);
 
   const uniqueMonths = useMemo(() => {
     const months = new Set<string>();
@@ -95,11 +108,12 @@ const Index = () => {
         if (eventLoc !== filterLocation) return false;
       }
       if (filterClassification !== "all" && lead.classification !== filterClassification) return false;
+      if (filterRep !== "all" && lead.captured_by !== filterRep) return false;
       return true;
     });
-  }, [displayLeads, searchQuery, filterMonth, filterEvent, filterLocation, filterClassification, eventMap]);
+  }, [displayLeads, searchQuery, filterMonth, filterEvent, filterLocation, filterClassification, filterRep, eventMap]);
 
-  const hasActiveFilters = searchQuery || filterMonth !== "all" || filterEvent !== "all" || filterLocation !== "all" || filterClassification !== "all";
+  const hasActiveFilters = searchQuery || filterMonth !== "all" || filterEvent !== "all" || filterLocation !== "all" || filterClassification !== "all" || filterRep !== "all";
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -107,6 +121,7 @@ const Index = () => {
     setFilterEvent("all");
     setFilterLocation("all");
     setFilterClassification("all");
+    setFilterRep("all");
   };
 
   const hotLeads = displayLeads.filter((l) => l.classification === "hot").length;
@@ -372,6 +387,19 @@ const Index = () => {
                   <SelectItem value="cold">Cold</SelectItem>
                 </SelectContent>
               </Select>
+              {(isAdmin || isManager) && (
+                <Select value={filterRep} onValueChange={setFilterRep}>
+                  <SelectTrigger className="h-7 w-[140px] text-[11px]">
+                    <SelectValue placeholder="Rep" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All reps</SelectItem>
+                    {uniqueReps.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" className="h-7 text-[11px] gap-1 text-muted-foreground" onClick={clearFilters}>
                   <X className="h-3 w-3" /> Clear
@@ -400,6 +428,7 @@ const Index = () => {
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Event</th>
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Score</th>
+                    {(isAdmin || isManager) && <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Captured By</th>}
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Sync</th>
                   </tr>
                 </thead>
@@ -433,6 +462,7 @@ const Index = () => {
                       </td>
                       <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
                       <td className="px-5 py-3"><ScoreBadge score={lead.score} /></td>
+                      {(isAdmin || isManager) && <td className="px-5 py-3 text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
                       <td className="px-5 py-3"><SyncBadge status={lead.sync_status as any} /></td>
                     </tr>
                   ))}

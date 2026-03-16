@@ -113,7 +113,7 @@ const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
   const { data: profiles = [] } = useProfiles();
-  const { user, isSalesRep, isAdmin } = useAuth();
+  const { user, isSalesRep, isAdmin, isManager } = useAuth();
   const deleteLead = useDeleteLead();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -134,6 +134,13 @@ const LeadsPage = () => {
     events.forEach((e) => map.set(e.id, e.name));
     return map;
   }, [events]);
+
+  // Build profile lookup for rep names
+  const profileMap = useMemo(() => {
+    const map = new Map<string, string>();
+    profiles.forEach((p) => map.set(p.user_id, p.display_name || "Unknown"));
+    return map;
+  }, [profiles]);
 
   // Build unique reps list for filter
   const uniqueReps = useMemo(() => {
@@ -242,7 +249,7 @@ const LeadsPage = () => {
 
   // CSV export with event name resolution (#13)
   const exportCsv = () => {
-    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Is Duplicate", "Duplicate Of", "Captured At"];
+    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured By", "Is Duplicate", "Duplicate Of", "Captured At"];
     const leadsMap = new Map(filtered.map((l) => [l.id, l]));
     const rows = filtered.map((l) => {
       const dupOfLead = (l as any).duplicate_of ? leadsMap.get((l as any).duplicate_of) : null;
@@ -251,6 +258,7 @@ const LeadsPage = () => {
         l.event_id ? eventMap.get(l.event_id) || "Unknown" : "No Event",
         l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
         l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
+        profileMap.get(l.captured_by) || "Unknown",
         (l as any).is_duplicate ? "Yes" : "No",
         dupOfLead ? dupOfLead.name : "",
         new Date(l.created_at).toLocaleString(),
@@ -308,7 +316,7 @@ const LeadsPage = () => {
               ))}
             </SelectContent>
           </Select>
-          {isAdmin && (
+          {(isAdmin || isManager) && (
             <Select value={repFilter} onValueChange={(v) => { setRepFilter(v); setCurrentPage(1); }}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <Filter className="h-4 w-4 mr-2" />
@@ -376,6 +384,7 @@ const LeadsPage = () => {
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Event</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
+                      {(isAdmin || isManager) && <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Captured By</th>}
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
@@ -409,6 +418,7 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden md:table-cell text-xs text-muted-foreground">{lead.event_id ? eventMap.get(lead.event_id) || "Unknown" : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
+                        {(isAdmin || isManager) && <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
