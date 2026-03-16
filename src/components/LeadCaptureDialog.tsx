@@ -209,6 +209,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       score: scoring.score,
       classification: finalClassification,
       captured_by: user.id,
+      is_duplicate: duplicateInfo?.is_duplicate ? true : false,
+      duplicate_of: duplicateInfo?.is_duplicate ? (duplicateInfo.lead_id ?? null) : null,
     };
 
     if (!navigator.onLine) {
