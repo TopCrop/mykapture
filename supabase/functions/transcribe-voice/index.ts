@@ -39,7 +39,7 @@ serve(async (req) => {
           {
             role: "user",
             content: [
-              { type: "text", text: "Listen to this voice note from a sales rep at a conference. Produce structured meeting notes in English with key takeaways and any lead information mentioned." },
+              { type: "text", text: "Extract all key information from this sales rep voice note into structured bullet points in English. Include: prospect details, pain points, budget signals, timeline, next steps, and any other relevant sales context." },
               {
                 type: "input_audio",
                 input_audio: {
