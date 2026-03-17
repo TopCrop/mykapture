@@ -384,7 +384,7 @@ const LeadsPage = () => {
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden md:table-cell">Event</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
-                      {(isAdmin || isManager) && <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Captured By</th>}
+                      {(isAdmin || isManager) && <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Captured By</th>}
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
@@ -418,7 +418,7 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden md:table-cell text-xs text-muted-foreground">{lead.event_id ? eventMap.get(lead.event_id) || "Unknown" : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
-                        {(isAdmin || isManager) && <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
+                        {(isAdmin || isManager) && <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
