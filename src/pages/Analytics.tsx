@@ -62,6 +62,11 @@ const AnalyticsPage = () => {
     { name: "Failed", value: filteredLeads.filter((l) => l.sync_status === "failed").length, color: "hsl(0, 84%, 60%)" },
   ], [filteredLeads]);
 
+  const pieLabel = ({ name, value }: { name?: string; value?: number }) => {
+    if (!name || !value || value <= 0) return "";
+    return `${name}: ${value}`;
+  };
+
   // Rep performance
   const repData = useMemo(() => {
     const map = new Map<string, { name: string; total: number; hot: number }>();
