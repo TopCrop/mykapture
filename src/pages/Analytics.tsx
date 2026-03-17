@@ -62,6 +62,11 @@ const AnalyticsPage = () => {
     { name: "Failed", value: filteredLeads.filter((l) => l.sync_status === "failed").length, color: "hsl(0, 84%, 60%)" },
   ], [filteredLeads]);
 
+  const pieLabel = ({ name, value }: { name?: string; value?: number }) => {
+    if (!name || !value || value <= 0) return "";
+    return `${name}: ${value}`;
+  };
+
   // Rep performance
   const repData = useMemo(() => {
     const map = new Map<string, { name: string; total: number; hot: number }>();
@@ -178,7 +183,7 @@ const AnalyticsPage = () => {
               <h3 className="text-sm font-semibold mb-4">Classification Distribution</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={classificationData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0} label={({ name, value }) => `${name}: ${value}`}>
+                  <Pie data={classificationData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0} label={pieLabel} labelLine={false}>
                     {classificationData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
@@ -190,7 +195,7 @@ const AnalyticsPage = () => {
               <h3 className="text-sm font-semibold mb-4">CRM Sync Status</h3>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={syncData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0} label={({ name, value }) => `${name}: ${value}`}>
+                  <Pie data={syncData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value" strokeWidth={0} label={pieLabel} labelLine={false}>
                     {syncData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                   </Pie>
                   <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
