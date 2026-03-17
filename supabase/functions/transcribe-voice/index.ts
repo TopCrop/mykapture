@@ -34,12 +34,12 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a sales meeting note-taker. Listen to the audio and produce concise, well-structured meeting notes in English — NOT a verbatim transcript. The speaker may use any language, but your output MUST always be in English. Summarize key points, action items, and lead details. Call the transcribe_audio tool with your results.",
+            content: "You are a sales intelligence assistant processing field voice notes from sales reps at conferences. Your job is to extract and structure the key information as clean bullet points in English.\n\nSTRICT RULES:\n- NEVER use third-person narration. NEVER write \"The speaker says...\" or \"The speaker mentions...\" or any variation.\n- ALWAYS output bullet points only — no paragraphs, no prose sentences.\n- ALWAYS write in English regardless of the language spoken in the audio.\n- Each bullet must be a direct, factual note — not a description of what was said.\n- If the rep mentioned a name, company, need, budget, timeline, or next step — capture each as its own bullet.\n- Call the transcribe_audio tool with your results.",
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Listen to this voice note from a sales rep at a conference. Produce structured meeting notes in English with key takeaways and any lead information mentioned." },
+              { type: "text", text: "Extract all key information from this sales rep voice note into structured bullet points in English. Include: prospect details, pain points, budget signals, timeline, next steps, and any other relevant sales context." },
               {
                 type: "input_audio",
                 input_audio: {
@@ -59,7 +59,7 @@ serve(async (req) => {
               parameters: {
                 type: "object",
                 properties: {
-                  transcription: { type: "string", description: "Concise meeting notes in English summarizing key points, NOT a verbatim transcript. Use bullet points or short paragraphs." },
+                  transcription: { type: "string", description: "Bullet-point notes in English only. Each bullet is a direct factual statement. No prose, no paragraphs, no third-person narration. Example format: • Decision maker: VP Sales at TechCorp • Pain point: manual lead entry taking 3 hrs/event • Budget: confirmed Q2 • Timeline: wants demo within 2 weeks • Next step: send case study" },
                   extracted_name: { type: "string", description: "Person name mentioned, if any" },
                   extracted_company: { type: "string", description: "Company mentioned, if any" },
                   extracted_needs: { type: "string", description: "Needs or pain points mentioned, if any" },
