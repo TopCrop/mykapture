@@ -418,7 +418,7 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden md:table-cell text-xs text-muted-foreground">{lead.event_id ? eventMap.get(lead.event_id) || "Unknown" : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
-                        {(isAdmin || isManager) && <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
+                        {(isAdmin || isManager || isSuperAdmin) && <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
