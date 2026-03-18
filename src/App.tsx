@@ -48,7 +48,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
-      <Sonner position="top-center" richColors style={{ zIndex: 9999 }} />
+      <Sonner duration={3000} closeButton={true} visibleToasts={3} position="top-center" richColors style={{ zIndex: 9999 }} />
       <AuthProvider>
         <OrgProvider>
           <BrowserRouter>
