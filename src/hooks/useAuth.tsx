@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type AppRole = "admin" | "sales_rep" | "manager" | "super_admin";
 
@@ -39,7 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-  const fetchRole = async (userId: string) => {
+  const fetchRole = async (userId: string, email?: string) => {
+    const PERSONAL_GOOGLE_DOMAINS = new Set([
+      'gmail.com', 'googlemail.com'
+    ]);
+    const domain = email?.split('@')[1]?.toLowerCase();
+    if (domain && PERSONAL_GOOGLE_DOMAINS.has(domain)) {
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserRole(null);
+      setLoading(false);
+      toast.error(
+        "Personal Gmail accounts are not supported. Please sign in with your work email address — even if it is hosted on Google."
+      );
+      return;
+    }
     const { data } = await supabase
       .from("user_roles")
       .select("role")
@@ -57,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user) {
         // Defer role fetch to avoid Supabase auth deadlock
-        setTimeout(() => fetchRole(session.user.id), 0);
+        setTimeout(() => fetchRole(session.user.id, session.user.email), 0);
       } else {
         setUserRole(null);
         setLoading(false);
@@ -68,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchRole(session.user.id).then(() => setLoading(false));
+        fetchRole(session.user.id, session.user.email).then(() => setLoading(false));
       } else {
         setLoading(false);
       }
