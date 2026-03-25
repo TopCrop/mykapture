@@ -40,7 +40,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-  const fetchRole = async (userId: string) => {
+  const fetchRole = async (userId: string, email?: string) => {
+    const PERSONAL_GOOGLE_DOMAINS = new Set([
+      'gmail.com', 'googlemail.com'
+    ]);
+    const domain = email?.split('@')[1]?.toLowerCase();
+    if (domain && PERSONAL_GOOGLE_DOMAINS.has(domain)) {
+      await supabase.auth.signOut();
+      setUser(null);
+      setUserRole(null);
+      setLoading(false);
+      toast.error(
+        "Personal Gmail accounts are not supported. Please sign in with your work email address — even if it is hosted on Google."
+      );
+      return;
+    }
     const { data } = await supabase
       .from("user_roles")
       .select("role")
