@@ -228,6 +228,20 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
                   <Input value={editData.phone || ""} onChange={(e) => handleEditChange({ phone: e.target.value })} />
                 </div>
               </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label className="text-xs">Event</Label>
+                <Select value={editEventId || "none"} onValueChange={(v) => { setEditEventId(v === "none" ? "" : v); setHasUnsavedEdits(true); }}>
+                  <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No event</SelectItem>
+                    {filteredEvents.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}{!isSalesRep ? ` (${e.status})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Budget</Label>
