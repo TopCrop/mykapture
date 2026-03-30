@@ -141,14 +141,6 @@ const AuthPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/dashboard`,
-      extraParams: { hd: '*' },
-    });
-    if (error) toast.error("Google sign-in failed");
-  };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4 relative overflow-hidden">
       {/* Geometric background decoration */}
