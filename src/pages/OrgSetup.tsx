@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useOrg } from "@/hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,72 @@ const OrgSetupPage = () => {
   const { user, signOut, userRole } = useAuth();
   const { loading } = useOrg();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [orgName, setOrgName] = useState("");
   const [domain, setDomain] = useState(() => user?.email?.split("@")[1] || "");
   const [creating, setCreating] = useState(false);
+  const [checkingExisting, setCheckingExisting] = useState(true);
 
   const isSuperAdmin = userRole === "super_admin";
+  const userDomain = user?.email?.split("@")[1]?.toLowerCase();
 
-  if (loading) {
+  // Fix 3: Check for existing pending/approved org for user's domain
+  useEffect(() => {
+    if (!user || !userDomain) {
+      setCheckingExisting(false);
+      return;
+    }
+
+    const checkAndAutoAssign = async () => {
+      try {
+        const { data: existingOrg } = await supabase
+          .from("organizations")
+          .select("id, name, status")
+          .eq("domain", userDomain)
+          .in("status", ["pending", "approved"])
+          .maybeSingle();
+
+        if (existingOrg) {
+          // Check if user is already a member
+          const { data: membership } = await supabase
+            .from("org_members")
+            .select("id")
+            .eq("org_id", existingOrg.id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (!membership) {
+            // Auto-assign user to existing org
+            await supabase
+              .from("org_members")
+              .insert({ org_id: existingOrg.id, user_id: user.id });
+            await supabase
+              .from("profiles")
+              .update({ org_id: existingOrg.id })
+              .eq("user_id", user.id);
+          }
+
+          // Invalidate queries so routing picks up the new membership
+          queryClient.invalidateQueries({ queryKey: ["org_membership"] });
+          queryClient.invalidateQueries({ queryKey: ["organization"] });
+
+          if (existingOrg.status === "pending") {
+            navigate("/org-pending", { replace: true });
+          }
+          // If approved, the normal routing in ProtectedRoute will redirect to dashboard
+        }
+      } catch (err) {
+        // Non-critical — let user proceed to create form
+        console.error("Error checking existing org:", err);
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+
+    checkAndAutoAssign();
+  }, [user, userDomain, queryClient, navigate]);
+
+  if (loading || checkingExisting) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
