@@ -119,12 +119,19 @@ function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () =>
 export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }: LeadDetailDialogProps) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<LeadRow>>({});
+  const [editEventId, setEditEventId] = useState(lead?.event_id || "");
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
   const [viewOriginalLead, setViewOriginalLead] = useState<LeadRow | null>(null);
+  const { userRole } = useAuth();
   const updateLead = useUpdateLead();
   const updateFollowUp = useUpdateFollowUpBooking();
   const { data: followUps = [] } = useFollowUpBookings(lead?.id);
+
+  const isSalesRep = userRole === "sales_rep";
+  const filteredEvents = isSalesRep
+    ? events.filter((e) => e.status === "active")
+    : events;
 
   if (!lead) return null;
   const event = events.find((e) => e.id === lead.event_id);
