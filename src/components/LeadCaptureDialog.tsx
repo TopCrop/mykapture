@@ -148,6 +148,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   };
   const handleEventChange = (val: string) => {
     setEventId(val);
+    setShowEventWarning(false);
     checkDuplicate(email, phone, val);
   };
   const [bookFollowUp, setBookFollowUp] = useState(false);
