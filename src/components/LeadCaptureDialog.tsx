@@ -67,6 +67,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
 
   // Meta
   const [eventId, setEventId] = useState("");
+  const [showEventWarning, setShowEventWarning] = useState(false);
   const [notes, setNotes] = useState("");
   const [classOverride, setClassOverride] = useState<LeadClassification | "">("");
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
