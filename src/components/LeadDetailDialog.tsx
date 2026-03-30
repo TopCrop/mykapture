@@ -149,6 +149,7 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
       phone: lead.phone, notes: lead.notes, bant_budget: lead.bant_budget,
       bant_authority: lead.bant_authority, bant_timeline: lead.bant_timeline, bant_employees: lead.bant_employees,
     });
+    setEditEventId(lead.event_id || "");
     setEditing(true);
     setHasUnsavedEdits(false);
   };
