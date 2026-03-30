@@ -67,6 +67,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
 
   // Meta
   const [eventId, setEventId] = useState("");
+  const [showEventWarning, setShowEventWarning] = useState(false);
   const [notes, setNotes] = useState("");
   const [classOverride, setClassOverride] = useState<LeadClassification | "">("");
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
@@ -147,6 +148,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   };
   const handleEventChange = (val: string) => {
     setEventId(val);
+    setShowEventWarning(false);
     checkDuplicate(email, phone, val);
   };
   const [bookFollowUp, setBookFollowUp] = useState(false);
@@ -173,6 +175,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setVoiceNoteUrl(""); setTranscription("");
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
     setMeetingType("call"); setBookFollowUp(false); setNameAttempted(false);
+    setShowEventWarning(false);
   };
 
   // Card scan triggers duplicate check (#4)
@@ -333,6 +336,39 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
               </div>
 
               <div className="space-y-1.5">
+                <Label className="text-xs">Event</Label>
+                <Select value={eventId} onValueChange={handleEventChange} disabled={isSalesRep && visibleEvents.length === 0}>
+                  <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
+                  <SelectContent>
+                    {isSalesRep && visibleEvents.length === 0 ? (
+                      <SelectItem value="__none__" disabled>No active events — contact your admin</SelectItem>
+                    ) : (
+                      visibleEvents.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name}{!isSalesRep ? ` (${e.status})` : ""}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {showEventWarning && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-400 leading-snug">
+                      No event tagged — this lead won't appear in event reports.{" "}
+                      <button
+                        type="button"
+                        className="underline font-medium hover:text-amber-300 transition-colors"
+                        onClick={() => { setShowEventWarning(false); handleSubmit(); }}
+                      >
+                        Submit anyway
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note (optional)</Label>
                 <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
                 {transcription && (
@@ -356,7 +392,14 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </Alert>
               )}
 
-              <Button className="w-full" onClick={handleSubmit} disabled={!name.trim() || createLead.isPending}>
+              <Button className="w-full" onClick={() => {
+                if (!eventId) {
+                  setShowEventWarning(true);
+                } else {
+                  setShowEventWarning(false);
+                  handleSubmit();
+                }
+              }} disabled={!name.trim() || createLead.isPending}>
                 {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
                 {!navigator.onLine ? "Save Offline" : "Capture Lead"}
               </Button>
