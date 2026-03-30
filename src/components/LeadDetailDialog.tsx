@@ -119,12 +119,19 @@ function ScheduleFollowUpForm({ lead, onClose }: { lead: LeadRow; onClose: () =>
 export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }: LeadDetailDialogProps) {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<LeadRow>>({});
+  const [editEventId, setEditEventId] = useState(lead?.event_id || "");
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [hasUnsavedEdits, setHasUnsavedEdits] = useState(false);
   const [viewOriginalLead, setViewOriginalLead] = useState<LeadRow | null>(null);
+  const { userRole } = useAuth();
   const updateLead = useUpdateLead();
   const updateFollowUp = useUpdateFollowUpBooking();
   const { data: followUps = [] } = useFollowUpBookings(lead?.id);
+
+  const isSalesRep = userRole === "sales_rep";
+  const filteredEvents = isSalesRep
+    ? events.filter((e) => e.status === "active")
+    : events;
 
   if (!lead) return null;
   const event = events.find((e) => e.id === lead.event_id);
@@ -142,6 +149,7 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
       phone: lead.phone, notes: lead.notes, bant_budget: lead.bant_budget,
       bant_authority: lead.bant_authority, bant_timeline: lead.bant_timeline, bant_employees: lead.bant_employees,
     });
+    setEditEventId(lead.event_id || "");
     setEditing(true);
     setHasUnsavedEdits(false);
   };
@@ -153,7 +161,7 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
 
   const saveEdits = async () => {
     try {
-      await updateLead.mutateAsync({ id: lead.id, ...editData });
+      await updateLead.mutateAsync({ id: lead.id, ...editData, event_id: editEventId || null });
       toast.success("Lead updated!");
       setEditing(false);
       setHasUnsavedEdits(false);
@@ -219,6 +227,20 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
                   <Label className="text-xs">Phone</Label>
                   <Input value={editData.phone || ""} onChange={(e) => handleEditChange({ phone: e.target.value })} />
                 </div>
+              </div>
+              <div className="col-span-2 space-y-1.5">
+                <Label className="text-xs">Event</Label>
+                <Select value={editEventId || "none"} onValueChange={(v) => { setEditEventId(v === "none" ? "" : v); setHasUnsavedEdits(true); }}>
+                  <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No event</SelectItem>
+                    {filteredEvents.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.name}{!isSalesRep ? ` (${e.status})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
