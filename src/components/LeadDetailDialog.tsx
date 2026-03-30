@@ -161,7 +161,7 @@ export function LeadDetailDialog({ lead, open, onClose, events, allLeads = [] }:
 
   const saveEdits = async () => {
     try {
-      await updateLead.mutateAsync({ id: lead.id, ...editData });
+      await updateLead.mutateAsync({ id: lead.id, ...editData, event_id: editEventId || null });
       toast.success("Lead updated!");
       setEditing(false);
       setHasUnsavedEdits(false);
