@@ -38,7 +38,7 @@ const allMainItems = [
 
 const allSettingsItems = [
   { title: "Settings", url: "/settings", icon: Settings, roles: ["admin", "manager", "sales_rep", "super_admin"] },
-  { title: "Docs", url: "/docs", icon: FileText, roles: ["admin", "super_admin"] },
+  { title: "Docs", url: "/docs", icon: FileText, roles: ["super_admin"] },
   { title: "Super Admin", url: "/super-admin", icon: ShieldCheck, roles: ["super_admin"] },
 ];
 
