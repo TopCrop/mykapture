@@ -2,39 +2,57 @@
 
 ## Problem
 
-The `transcribe-voice` edge function already has anti-narration instructions in the system prompt and tool description, but Gemini 2.5 Flash still occasionally produces "The speaker says/mentions..." patterns. The current prompt-only approach is insufficient — LLMs can ignore instructions, especially with audio input.
+In Quick Capture mode, the Event dropdown is currently positioned BELOW the contact info section and the Current Solution field. After a rep scans a business card, the contact fields auto-populate and the rep's attention is drawn there — they often miss the Event dropdown sitting further down (or below the visible fold of the dialog), and end up submitting the lead with no event tag. Although a warning was added for untagged events, reps would prefer to see the event field upfront so they tag it before they even start scanning.
 
 ## Solution
 
-Two-layer fix: strengthen the prompt AND add server-side post-processing to strip narration patterns from the output before returning it.
+Move the Event dropdown to be the **first field** in Quick Capture mode — above the "CONTACT INFO" section. Keep all other behavior identical. No changes to Full BANT mode.
 
-### Changes to `supabase/functions/transcribe-voice/index.ts`
+### Changes to `src/components/LeadCaptureDialog.tsx`
 
-**1. Harden the system prompt** — add explicit negative examples and a stronger framing:
+**1. Reorder the Quick Mode block** (lines ~309–411)
 
-Replace the system content with a version that includes:
-- "You are writing notes AS the sales rep, not about them"
-- Explicit banned phrases list: "The speaker", "The user", "They mention", "He/She says", "The rep", "The person"
-- A "WRONG vs RIGHT" example pair to anchor the model
+Move the Event dropdown block (currently lines ~338–369) to the very top of the Quick Mode `div`, right after the opening `<div className="space-y-3">` and BEFORE the "CONTACT INFO" heading + Scan Card button row.
 
-**2. Add post-processing after parsing the tool call result** (lines ~101-102)
+The new order in Quick Mode becomes:
 
-After `JSON.parse(toolCall.function.arguments)`, run a cleanup function on the `transcription` and `summary` fields that:
-- Uses regex to strip common narration prefixes: `/^[\s•\-]*(?:The (?:speaker|user|rep|person|caller|sales rep)[\s,]*(?:says?|mentions?|states?|describes?|explains?|notes?|talks? about|discusses?|indicates?|reports?|shares?|highlights?|refers? to|is saying|is mentioning)[:\s,]*)/gmi`
-- Removes "According to the speaker..." type phrases
-- Trims any resulting empty bullets
+1. **Event dropdown** (with the existing amber "no event tagged" warning)
+2. CONTACT INFO header + Scan Card button
+3. Contact fields (Name, Company, Email, Current Solution)
+4. Voice Note
+5. Quick Notes
+6. Duplicate alert
+7. Capture button
 
-This ensures that even if the model ignores the prompt, the output is cleaned before delivery.
+**2. Optional polish** — add a subtle label cue
 
-**3. No other changes** — no UI changes, no other files modified.
+Change the Event label in Quick mode from `"Event"` to `"Event"` with an inline hint line below the dropdown (only when no event is selected and warning is not yet shown):  
+`"Tag the event first — leads without an event won't appear in event reports."`  
+This is shown as muted helper text, not the amber warning. The amber warning still fires only when the rep clicks "Capture Lead" without an event.
+
+**3. No other changes**
+
+- Full BANT mode (Steps 1–3) is untouched — the Event dropdown stays where it is in Step 1.
+- All existing logic (duplicate check, event filtering by role, completed-event clearing, warning, "Submit anyway") remains identical.
+- No state, handler, or submission logic is changed — only JSX order within Quick Mode.
 
 ### Technical Detail
 
 ```text
-Flow:
-  Audio → Gemini 2.5 Flash (hardened prompt) → tool_call JSON
-    → post-process: regex strip narration → return clean result
+Quick Mode layout (before)            Quick Mode layout (after)
+─────────────────────────             ─────────────────────────
+CONTACT INFO    [Scan Card]           Event [▼]
+  Name *                              (helper text)
+  Company    Email                    
+  Current Solution                    CONTACT INFO    [Scan Card]
+                                        Name *
+Event [▼]                               Company    Email
+(amber warning if empty)                Current Solution
+                                      
+Voice Note                            Voice Note
+Quick Notes                           Quick Notes
+[Capture Lead]                        [Capture Lead]
 ```
 
-The regex cleanup is a safety net — the improved prompt should reduce occurrences, and the post-processing catches any that slip through.
+Files touched: `src/components/LeadCaptureDialog.tsx` (single block reorder, no new dependencies).
 
