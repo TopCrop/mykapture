@@ -308,6 +308,44 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
           {/* QUICK MODE */}
           {isQuickMode && (
             <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Event</Label>
+                <Select value={eventId} onValueChange={handleEventChange} disabled={isSalesRep && visibleEvents.length === 0}>
+                  <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
+                  <SelectContent>
+                    {isSalesRep && visibleEvents.length === 0 ? (
+                      <SelectItem value="__none__" disabled>No active events — contact your admin</SelectItem>
+                    ) : (
+                      visibleEvents.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>
+                          {e.name}{!isSalesRep ? ` (${e.status})` : ""}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {!eventId && !showEventWarning && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Tag the event first — leads without an event won't appear in event reports.
+                  </p>
+                )}
+                {showEventWarning && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-amber-400 leading-snug">
+                      No event tagged — this lead won't appear in event reports.{" "}
+                      <button
+                        type="button"
+                        className="underline font-medium hover:text-amber-300 transition-colors"
+                        onClick={() => { setShowEventWarning(false); handleSubmit(); }}
+                      >
+                        Submit anyway
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-muted-foreground">CONTACT INFO</h3>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setScannerOpen(true)}>
@@ -333,39 +371,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                   <Label className="text-xs">Current Solution (optional)</Label>
                   <Input value={currentSolution} onChange={(e) => setCurrentSolution(e.target.value)} placeholder="e.g. Salesforce, HubSpot, Excel" />
                 </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs">Event</Label>
-                <Select value={eventId} onValueChange={handleEventChange} disabled={isSalesRep && visibleEvents.length === 0}>
-                  <SelectTrigger><SelectValue placeholder="Select event" /></SelectTrigger>
-                  <SelectContent>
-                    {isSalesRep && visibleEvents.length === 0 ? (
-                      <SelectItem value="__none__" disabled>No active events — contact your admin</SelectItem>
-                    ) : (
-                      visibleEvents.map((e) => (
-                        <SelectItem key={e.id} value={e.id}>
-                          {e.name}{!isSalesRep ? ` (${e.status})` : ""}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {showEventWarning && (
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-400 mt-0.5 shrink-0" />
-                    <p className="text-xs text-amber-400 leading-snug">
-                      No event tagged — this lead won't appear in event reports.{" "}
-                      <button
-                        type="button"
-                        className="underline font-medium hover:text-amber-300 transition-colors"
-                        onClick={() => { setShowEventWarning(false); handleSubmit(); }}
-                      >
-                        Submit anyway
-                      </button>
-                    </p>
-                  </div>
-                )}
               </div>
 
               <div className="space-y-1.5">
