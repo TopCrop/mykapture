@@ -12,6 +12,7 @@ import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
 import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
 import { FeatureFlagsManager } from "@/components/FeatureFlagsManager";
+import { PendingUsersSection } from "@/components/PendingUsersSection";
 import type { AppRole } from "@/hooks/useAuth";
 import { useMemo, useState } from "react";
 import { InviteTeamDialog } from "@/components/InviteTeamDialog";
@@ -185,7 +186,8 @@ const SettingsPage = () => {
             <TabsContent value="organization">
               <OrganizationSettings />
             </TabsContent>
-            <TabsContent value="team">
+            <TabsContent value="team" className="space-y-4">
+              <PendingUsersSection />
               <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card overflow-hidden">
                 <div className="p-5 pb-3 flex items-center justify-between">
                   <div className="flex items-center gap-3">
