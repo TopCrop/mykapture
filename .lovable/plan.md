@@ -1,58 +1,63 @@
 
 
-## Problem
+## Goal
 
-In Quick Capture mode, the Event dropdown is currently positioned BELOW the contact info section and the Current Solution field. After a rep scans a business card, the contact fields auto-populate and the rep's attention is drawn there — they often miss the Event dropdown sitting further down (or below the visible fold of the dialog), and end up submitting the lead with no event tag. Although a warning was added for untagged events, reps would prefer to see the event field upfront so they tag it before they even start scanning.
+Wrap the **BANT Qualification** and **Needs** sections in Step 2 of Full Mode inside two visually distinct, bordered "card" containers so users perceive them as deliberate, premium qualification layers — not loose form fields. Make Step 2 feel like a guided, captivating qualification experience.
 
-## Solution
+## Visual Design
 
-Move the Event dropdown to be the **first field** in Quick Capture mode — above the "CONTACT INFO" section. Keep all other behavior identical. No changes to Full BANT mode.
+Two stacked panels, each with:
 
-### Changes to `src/components/LeadCaptureDialog.tsx`
+- **Subtle teal-tinted border** (`border-primary/20`) and soft inner background (`bg-primary/[0.03]`) — picks up the Kapture teal accent without shouting.
+- **Rounded corners** (`rounded-lg`) and generous internal padding (`p-4`).
+- **Numbered step badge** in the top-left corner — small circular teal chip showing **"1"** and **"2"** so users immediately read these as two qualification stages.
+- **Section title** next to the badge (e.g. "BANT Qualification") with a small **uppercase eyebrow label** above it ("Step 1 of 2 · Qualify the opportunity").
+- **One-line helper subtitle** under each title explaining purpose:
+  - BANT card: *"Score budget, authority, timeline, and company size."*
+  - Needs card: *"Tag the modules they're interested in."*
+- **Soft top accent line** (`border-t-2 border-primary/40`) on each card for a "tab" feel.
 
-**1. Reorder the Quick Mode block** (lines ~309–411)
-
-Move the Event dropdown block (currently lines ~338–369) to the very top of the Quick Mode `div`, right after the opening `<div className="space-y-3">` and BEFORE the "CONTACT INFO" heading + Scan Card button row.
-
-The new order in Quick Mode becomes:
-
-1. **Event dropdown** (with the existing amber "no event tagged" warning)
-2. CONTACT INFO header + Scan Card button
-3. Contact fields (Name, Company, Email, Current Solution)
-4. Voice Note
-5. Quick Notes
-6. Duplicate alert
-7. Capture button
-
-**2. Optional polish** — add a subtle label cue
-
-Change the Event label in Quick mode from `"Event"` to `"Event"` with an inline hint line below the dropdown (only when no event is selected and warning is not yet shown):  
-`"Tag the event first — leads without an event won't appear in event reports."`  
-This is shown as muted helper text, not the amber warning. The amber warning still fires only when the rep clicks "Capture Lead" without an event.
-
-**3. No other changes**
-
-- Full BANT mode (Steps 1–3) is untouched — the Event dropdown stays where it is in Step 1.
-- All existing logic (duplicate check, event filtering by role, completed-event clearing, warning, "Submit anyway") remains identical.
-- No state, handler, or submission logic is changed — only JSX order within Quick Mode.
-
-### Technical Detail
+### Layout (Step 2)
 
 ```text
-Quick Mode layout (before)            Quick Mode layout (after)
-─────────────────────────             ─────────────────────────
-CONTACT INFO    [Scan Card]           Event [▼]
-  Name *                              (helper text)
-  Company    Email                    
-  Current Solution                    CONTACT INFO    [Scan Card]
-                                        Name *
-Event [▼]                               Company    Email
-(amber warning if empty)                Current Solution
-                                      
-Voice Note                            Voice Note
-Quick Notes                           Quick Notes
-[Capture Lead]                        [Capture Lead]
+┌─ Current Solution (unchanged, sits above) ─────────┐
+
+╔═══ teal accent line ═══════════════════════════════╗
+║  [1]  STEP 1 OF 2 · QUALIFY THE OPPORTUNITY        ║
+║       BANT Qualification                           ║
+║       Score budget, authority, timeline, size.     ║
+║                                                    ║
+║   Budget [▼]            Authority [▼]              ║
+║   Timeline [▼]          Employees [▼]              ║
+╚════════════════════════════════════════════════════╝
+
+╔═══ teal accent line ═══════════════════════════════╗
+║  [2]  STEP 2 OF 2 · INTEREST AREAS                 ║
+║       Needs                                        ║
+║       Tag the modules they're interested in.       ║
+║                                                    ║
+║   ☐ ATS Hire   ☐ Payroll   ☐ Time & Attendance     ║
+║   ☐ Reporting  ☐ PMS       ☐ L&D   ☐ PSA  ...      ║
+╚════════════════════════════════════════════════════╝
+
+[Schedule Follow-Up section — unchanged below]
 ```
 
-Files touched: `src/components/LeadCaptureDialog.tsx` (single block reorder, no new dependencies).
+## Implementation
+
+**File:** `src/components/LeadCaptureDialog.tsx` (Step 2 block, lines ~498–564)
+
+1. Wrap the BANT grid (Budget / Authority / Timeline / Employees) inside a `<div>` with classes:  
+   `relative rounded-lg border border-primary/20 border-t-2 border-t-primary/40 bg-primary/[0.03] p-4 space-y-3`
+2. Add header row: numbered teal chip (`h-6 w-6 rounded-full bg-primary/15 text-primary text-xs font-semibold`) + eyebrow label (`text-[10px] uppercase tracking-wider text-primary/70`) + title (`text-sm font-semibold text-foreground`) + helper subtitle (`text-xs text-muted-foreground`).
+3. Repeat the same wrapper around the Needs section, with chip "2" and the Needs-specific labels.
+4. Replace the existing plain `<h3>BANT QUALIFICATION</h3>` and the bare Needs `<Label>` since they are now part of the card headers.
+5. No logic, state, or data changes — purely JSX + Tailwind. Quick Mode and Steps 1/3 untouched.
+
+## Why this works
+
+- The numbered chips and "Step X of 2" eyebrows make it unmistakable that these are two deliberate qualification stages, not optional clutter.
+- Teal-tinted borders + accent line tie into the existing Kapture brand palette without introducing new colors.
+- Helper subtitles answer "why am I filling this in?" in one glance, lifting completion rates.
+- Cards visually separate qualification (BANT/Needs) from the follow-up scheduling block below, improving scannability.
 
