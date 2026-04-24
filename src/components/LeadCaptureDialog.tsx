@@ -451,10 +451,6 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                   <Label className="text-xs flex items-center gap-1"><Globe className="h-3 w-3" /> Website</Label>
                   <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://techcorp.com" />
                 </div>
-                <div className="col-span-2 space-y-1.5">
-                  <Label className="text-xs">Current Solution (optional)</Label>
-                  <Input value={currentSolution} onChange={(e) => setCurrentSolution(e.target.value)} placeholder="e.g. Salesforce, HubSpot, Excel" />
-                </div>
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Event</Label>
