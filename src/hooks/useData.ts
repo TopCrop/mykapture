@@ -16,8 +16,52 @@ type FollowUpBookingRow = Database["public"]["Tables"]["follow_up_bookings"]["Ro
 type FollowUpBookingUpdate = Database["public"]["Tables"]["follow_up_bookings"]["Update"];
 type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
+type OrgFeaturesRow = Database["public"]["Tables"]["org_features"]["Row"];
 
 const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000, gcTime: 10 * 60 * 1000 } as const;
+
+export function useOrgFeatures() {
+  const { orgId } = useOrg();
+  return useQuery({
+    queryKey: ["org_features", orgId],
+    queryFn: async () => {
+      if (!orgId) return { schedule_follow_up: false } as Pick<OrgFeaturesRow, "schedule_follow_up">;
+      const { data, error } = await supabase
+        .from("org_features")
+        .select("org_id,schedule_follow_up,updated_at")
+        .eq("org_id", orgId)
+        .maybeSingle();
+      if (error) throw error;
+      return data ?? { org_id: orgId, schedule_follow_up: false, updated_at: null };
+    },
+    enabled: true,
+    ...CACHE_DEFAULTS,
+  });
+}
+
+export function useUpdateOrgFeatures() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { orgId } = useOrg();
+  return useMutation({
+    mutationFn: async (patch: Partial<Pick<OrgFeaturesRow, "schedule_follow_up">>) => {
+      if (!orgId) throw new Error("No organization");
+      const { data, error } = await supabase
+        .from("org_features")
+        .upsert(
+          { org_id: orgId, updated_by: user?.id, ...patch },
+          { onConflict: "org_id" }
+        )
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org_features", orgId] });
+    },
+  });
+}
 
 export function useLeads() {
   return useQuery({

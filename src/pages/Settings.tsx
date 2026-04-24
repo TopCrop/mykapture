@@ -1,7 +1,7 @@
 import { useSearchParams, Link } from "react-router-dom";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { motion } from "framer-motion";
-import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench, Trash2 } from "lucide-react";
+import { Shield, Database, Users, Bell, Mail, Loader2, Plug, User, Building2, Wrench, Trash2, ToggleRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles, useContactSubmissions, useUserRoles, useUpdateUserRole, useLeads, useDeleteUser } from "@/hooks/useData";
@@ -11,6 +11,7 @@ import { EmailIntegrations } from "@/components/EmailIntegrations";
 import { ProfileSettings } from "@/components/ProfileSettings";
 import { OrganizationSettings } from "@/components/OrganizationSettings";
 import { SolutionOptionsManager } from "@/components/SolutionOptionsManager";
+import { FeatureFlagsManager } from "@/components/FeatureFlagsManager";
 import type { AppRole } from "@/hooks/useAuth";
 import { useMemo, useState } from "react";
 import { InviteTeamDialog } from "@/components/InviteTeamDialog";
@@ -172,6 +173,7 @@ const SettingsPage = () => {
               <TabsTrigger value="organization" className="gap-1.5 text-xs"><Building2 className="h-3.5 w-3.5" /> Organization</TabsTrigger>
               <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
               <TabsTrigger value="solutions" className="gap-1.5 text-xs"><Wrench className="h-3.5 w-3.5" /> Solutions</TabsTrigger>
+              <TabsTrigger value="features" className="gap-1.5 text-xs"><ToggleRight className="h-3.5 w-3.5" /> Features</TabsTrigger>
               <TabsTrigger value="submissions" className="gap-1.5 text-xs"><Mail className="h-3.5 w-3.5" /> Contact Submissions</TabsTrigger>
               <TabsTrigger value="config" className="gap-1.5 text-xs"><Shield className="h-3.5 w-3.5" /> Configuration</TabsTrigger>
             </>
@@ -309,6 +311,10 @@ const SettingsPage = () => {
               ) : (
                 <div className="glass-card p-10 text-center text-sm text-muted-foreground">No organization found.</div>
               )}
+            </TabsContent>
+
+            <TabsContent value="features">
+              <FeatureFlagsManager />
             </TabsContent>
 
             <TabsContent value="submissions">

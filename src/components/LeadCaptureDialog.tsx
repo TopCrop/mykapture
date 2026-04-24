@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions } from "@/hooks/useData";
+import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions, useOrgFeatures } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -39,6 +39,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const { data: events } = useEvents();
   const { orgId } = useOrg();
   const { data: customOptions = [] } = useOrgSolutionOptions(orgId);
+  const { data: orgFeatures } = useOrgFeatures();
+  const showFollowUp = !!orgFeatures?.schedule_follow_up;
   const needOptions = customOptions.length > 0 ? customOptions.map((o) => o.label) : DEFAULT_NEED_OPTIONS;
   const visibleEvents = useMemo(() => {
     if (!events) return [];
@@ -243,7 +245,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     try {
       const created = await createLead.mutateAsync(leadData);
 
-      if (bookFollowUp && followUpDate && created) {
+      if (showFollowUp && bookFollowUp && followUpDate && created) {
         const [hours, minutes] = followUpTime.split(":").map(Number);
         const bookingDate = new Date(followUpDate);
         bookingDate.setHours(hours, minutes, 0, 0);
@@ -580,87 +582,89 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
               </div>
 
-              <div className="border-t pt-3 space-y-3">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <Checkbox checked={bookFollowUp} onCheckedChange={(c) => setBookFollowUp(!!c)} />
-                  <span className="text-sm font-medium flex items-center gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5 text-primary" />
-                    Schedule Follow-Up
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-[220px] text-xs">
-                        Creates an internal reminder visible in your notification bell. Calendar sync coming soon.
-                      </TooltipContent>
-                    </Tooltip>
-                  </span>
-                </label>
+              {showFollowUp && (
+                <div className="border-t pt-3 space-y-3">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={bookFollowUp} onCheckedChange={(c) => setBookFollowUp(!!c)} />
+                    <span className="text-sm font-medium flex items-center gap-1.5">
+                      <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                      Schedule Follow-Up
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-[220px] text-xs">
+                          Creates an internal reminder visible in your notification bell. Calendar sync coming soon.
+                        </TooltipContent>
+                      </Tooltip>
+                    </span>
+                  </label>
 
-                {bookFollowUp && (
-                  <div className="space-y-3 pl-6">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Date</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-xs", !followUpDate && "text-muted-foreground")}>
-                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                              {followUpDate ? format(followUpDate, "PPP") : "Pick date"}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={followUpDate}
-                              onSelect={setFollowUpDate}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Time</Label>
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          <Input type="time" value={followUpTime} onChange={(e) => setFollowUpTime(e.target.value)} className="text-xs" />
+                  {bookFollowUp && (
+                    <div className="space-y-3 pl-6">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Date</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-xs", !followUpDate && "text-muted-foreground")}>
+                                <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                                {followUpDate ? format(followUpDate, "PPP") : "Pick date"}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={followUpDate}
+                                onSelect={setFollowUpDate}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Time</Label>
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Input type="time" value={followUpTime} onChange={(e) => setFollowUpTime(e.target.value)} className="text-xs" />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Duration</Label>
-                        <Select value={followUpDuration} onValueChange={setFollowUpDuration}>
-                          <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="15">15 min</SelectItem>
-                            <SelectItem value="30">30 min</SelectItem>
-                            <SelectItem value="45">45 min</SelectItem>
-                            <SelectItem value="60">1 hour</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Duration</Label>
+                          <Select value={followUpDuration} onValueChange={setFollowUpDuration}>
+                            <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="15">15 min</SelectItem>
+                              <SelectItem value="30">30 min</SelectItem>
+                              <SelectItem value="45">45 min</SelectItem>
+                              <SelectItem value="60">1 hour</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Type</Label>
+                          <Select value={meetingType} onValueChange={setMeetingType}>
+                            <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="call">Phone Call</SelectItem>
+                              <SelectItem value="video">Video Call</SelectItem>
+                              <SelectItem value="in_person">In Person</SelectItem>
+                              <SelectItem value="email">Email</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Type</Label>
-                        <Select value={meetingType} onValueChange={setMeetingType}>
-                          <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="call">Phone Call</SelectItem>
-                            <SelectItem value="video">Video Call</SelectItem>
-                            <SelectItem value="in_person">In Person</SelectItem>
-                            <SelectItem value="email">Email</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                      <p className="text-[10px] text-muted-foreground italic">
+                        Calendar integrations (Google, Microsoft, Apple) coming soon via Settings.
+                      </p>
                     </div>
-                    <p className="text-[10px] text-muted-foreground italic">
-                      Calendar integrations (Google, Microsoft, Apple) coming soon via Settings.
-                    </p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
@@ -720,7 +724,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 </div>
               )}
 
-              {bookFollowUp && followUpDate && (
+              {showFollowUp && bookFollowUp && followUpDate && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                   <span>Follow-up: {format(followUpDate, "PPP")} at {followUpTime} ({followUpDuration} min {meetingType})</span>
