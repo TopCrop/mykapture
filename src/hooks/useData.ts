@@ -64,13 +64,20 @@ export function useUpdateOrgFeatures() {
 }
 
 export function useLeads() {
+  const { user, userRole } = useAuth();
+  const canSeeAll = userRole === "admin" || userRole === "manager" || userRole === "super_admin";
   return useQuery({
-    queryKey: ["leads"],
+    queryKey: ["leads", userRole, user?.id],
+    enabled: !!user?.id && !!userRole,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("leads")
         .select("id,name,title,company,email,phone,classification,score,sync_status,event_id,captured_by,created_at,updated_at,notes,bant_budget,bant_authority,bant_timeline,bant_employees,bant_need,follow_up_email_sent,follow_up_email_sent_at,voice_note_url,transcription,website")
         .order("created_at", { ascending: false });
+      if (!canSeeAll && user?.id) {
+        query = query.eq("captured_by", user.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       return data as LeadRow[];
     },
