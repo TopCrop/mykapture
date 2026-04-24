@@ -435,7 +435,10 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email_confirmed: boolean | null
           id: string
+          manually_approved_at: string | null
+          manually_approved_by: string | null
           org_id: string | null
           phone: string | null
           team: string | null
@@ -447,7 +450,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email_confirmed?: boolean | null
           id?: string
+          manually_approved_at?: string | null
+          manually_approved_by?: string | null
           org_id?: string | null
           phone?: string | null
           team?: string | null
@@ -459,7 +465,10 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email_confirmed?: boolean | null
           id?: string
+          manually_approved_at?: string | null
+          manually_approved_by?: string | null
           org_id?: string | null
           phone?: string | null
           team?: string | null
@@ -500,6 +509,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_approve_user: { Args: { _user_id: string }; Returns: undefined }
       check_duplicate_lead: {
         Args: {
           _current_user_id: string
