@@ -1,79 +1,39 @@
-
-
 ## Problem
 
-Approving a pending user fails with:
+You reported a sales rep seeing all leads in their org. The current Postgres RLS policy on `public.leads` already restricts SELECT to:
 
-```
-column "confirmed_at" can only be updated to DEFAULT
-```
-
-The current `public.admin_approve_user` function tries to write directly to `auth.users.confirmed_at`:
-
-```sql
-UPDATE auth.users
-SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
-    confirmed_at = COALESCE(confirmed_at, now())
-WHERE id = _user_id
-  AND email_confirmed_at IS NULL;
+```text
+org_id = my_org
+AND (captured_by = me OR I'm admin OR I'm manager)
+OR  I'm super_admin
 ```
 
-In Supabase's auth schema, `confirmed_at` is a **generated column** computed from `email_confirmed_at` and `phone_confirmed_at`. Postgres rejects any direct write to it (only `DEFAULT` is allowed), which aborts the whole transaction — so the profile never gets marked approved either.
+So at the database layer, a true sales rep should only ever receive their own captured leads. Most likely the rep you observed actually has an elevated role, or had cached admin-era data in React Query. Either way, the client today blindly trusts whatever the server returns and never explicitly scopes the query — that's a correctness gap worth closing.
 
-## Fix
+## Fix (defense in depth)
 
-Single migration that replaces `public.admin_approve_user` to update only `email_confirmed_at`. Postgres recomputes `confirmed_at` automatically.
+One change in `src/hooks/useData.ts`:
 
-### Migration
+- `useLeads()` becomes role-aware. It reads `userRole` and `user.id` from `useAuth()`. If the user is **not** admin/manager/super_admin, the Supabase query gets an explicit `.eq('captured_by', user.id)` filter. The query key becomes `['leads', userRole, user.id]` so cached admin data never leaks across role/user changes.
 
-```sql
-CREATE OR REPLACE FUNCTION public.admin_approve_user(_user_id uuid)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-DECLARE
-  _target_org_id uuid;
-  _caller_org_id uuid;
-BEGIN
-  -- Only admins / super admins
-  IF NOT (public.has_role(auth.uid(), 'admin') OR public.is_super_admin(auth.uid())) THEN
-    RAISE EXCEPTION 'Unauthorised';
-  END IF;
+That's it for the data layer. RLS already enforces the same rule server-side; the client filter just guarantees the UI matches even if (a) someone weakens the policy in future, (b) React Query has stale cache from a different role, or (c) an admin-era cached payload survives a sign-out/sign-in.
 
-  -- Same-org check (super admins bypass)
-  IF NOT public.is_super_admin(auth.uid()) THEN
-    SELECT org_id INTO _target_org_id FROM public.profiles WHERE user_id = _user_id;
-    SELECT public.get_user_org_id(auth.uid()) INTO _caller_org_id;
-    IF _target_org_id IS NULL OR _target_org_id <> _caller_org_id THEN
-      RAISE EXCEPTION 'Cannot approve users outside your organization';
-    END IF;
-  END IF;
+## UI consistency pass (`src/pages/Leads.tsx`)
 
-  -- Mark approved on profile
-  UPDATE public.profiles
-  SET manually_approved_by = auth.uid(),
-      manually_approved_at = now(),
-      email_confirmed = true
-  WHERE user_id = _user_id;
+Already correct:
+- "Captured By" column hidden for sales reps (`isAdmin || isManager`).
+- "Rep" filter dropdown hidden for sales reps.
+- Bulk-delete + delete buttons hidden for sales reps.
 
-  -- Confirm email; confirmed_at is generated and updates automatically
-  UPDATE auth.users
-  SET email_confirmed_at = now()
-  WHERE id = _user_id
-    AND email_confirmed_at IS NULL;
-END;
-$$;
-```
+No UI changes needed — once `useLeads()` is scoped, the page automatically shows only the rep's own leads, the rep filter (already hidden) stays hidden, and pagination/CSV export operate on the scoped set.
 
-### What stays unchanged
+## What stays unchanged
 
-- All RLS policies on `profiles`, `org_features`, etc.
-- `PendingUsersSection.tsx` and the `list-pending-auth-status` / `resend-verification` edge functions — no client changes needed.
-- The "Approve Now" button will work as soon as the migration runs.
+- RLS policies on `leads` — already correct, no migration.
+- Admin and manager experience — they continue to see all org leads.
+- Super admin — continues to see all leads across all orgs.
+- Dashboard (`Index.tsx`), Analytics, Events pages — all consume `useLeads()`, so they automatically get the scoped result for sales reps without further edits.
 
 ## Files touched
 
-- `supabase/migrations/<new-timestamp>_fix_admin_approve_user.sql` — single `CREATE OR REPLACE FUNCTION` statement above.
-
+- `src/hooks/useData.ts` — make `useLeads()` filter by `captured_by` for sales reps and key the cache on role + user id.
