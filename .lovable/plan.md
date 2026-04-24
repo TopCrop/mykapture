@@ -1,87 +1,79 @@
 
 
-## Goal
+## Problem
 
-Two changes:
-1. **Hide Schedule Follow-Up** in the Lead Capture dialog by default (preserve code).
-2. **Add a new "Features" admin tab** in Settings where admins can toggle org-level feature flags. The first flag is "Schedule Follow-Up" — when enabled by an admin, the Schedule Follow-Up section reappears for sales reps in their lead capture flow. When disabled (default), it stays hidden.
+Approving a pending user fails with:
 
-## Design
-
-### A. New `org_features` table (per-org feature flags)
-
-Schema:
-```text
-org_features
-  org_id          uuid PK (FK → organizations, one row per org)
-  schedule_follow_up   boolean  default false
-  updated_at      timestamptz   default now()
-  updated_by      uuid          (auth.uid)
 ```
-- RLS:
-  - SELECT: any org member (`org_id = get_user_org_id(auth.uid())`) OR super admin
-  - INSERT/UPDATE: only admins of the org OR super admin
-  - No DELETE
-- Auto-create a row (all flags = false) when any user reads features for an org without one (handled client-side via upsert, or via trigger on org creation — we'll use lazy upsert from the admin Features panel).
-
-### B. New admin tab: **"Features"** in `src/pages/Settings.tsx`
-
-- Add `<TabsTrigger value="features">` with a `Sparkles`/`ToggleRight` icon (admin-only, alongside Organization/Team/Solutions).
-- New component `src/components/FeatureFlagsManager.tsx`:
-  - Card list of feature toggles with title + description + `Switch`.
-  - First (and only) entry:
-    - **Schedule Follow-Up** — *"Allow sales reps to schedule a follow-up call/meeting from the lead capture flow. Off by default."*
-  - Saves via upsert to `org_features` on toggle, optimistic UI, toasts on success/error, React Query invalidation.
-  - Designed to be extensible — adding future toggles is just one more `<FeatureToggleRow>` entry.
-
-### C. Hook: `useOrgFeatures()` in `src/hooks/useData.ts`
-
-- Fetches the row for the current `orgId` (defaults to `{ schedule_follow_up: false }` if no row exists).
-- Uses CACHE_DEFAULTS staleTime so the toggle takes effect within 2 minutes for sales reps (or instantly on next page load).
-- Companion `useUpdateOrgFeatures()` mutation that upserts and invalidates.
-
-### D. Gate Schedule Follow-Up in `src/components/LeadCaptureDialog.tsx`
-
-- Read flag: `const { data: features } = useOrgFeatures(); const showFollowUp = !!features?.schedule_follow_up;`
-- Wrap the Schedule Follow-Up block (lines ~583–663) and the Step-3 review summary (lines ~723–728) with `{showFollowUp && (...)}`.
-- In `handleSubmit`, gate the `createBooking.mutateAsync(...)` call with `if (showFollowUp && bookFollowUp && followUpDate && created) { ... }` so no booking is ever created when the feature is off.
-- All state (`bookFollowUp`, `followUpDate`, etc.) stays declared — zero rework when toggled back on.
-
-### E. What stays unchanged
-
-- Quick Mode — no Schedule Follow-Up there to begin with.
-- Step 1, BANT card, Needs card, Step 3 review (other than the conditional follow-up summary line) — untouched.
-- `LeadDetailDialog.tsx` Schedule Follow-Up form — **not** affected (this is post-capture and stays available).
-- All other Settings tabs unchanged.
-
-## Layout (new Features tab)
-
-```text
-Settings  ›  Features
-
-┌────────────────────────────────────────────────┐
-│ ◐ Schedule Follow-Up                  [ OFF ]  │
-│   Let sales reps book a follow-up call or      │
-│   meeting from the lead capture dialog.        │
-│   Off by default.                              │
-└────────────────────────────────────────────────┘
-
-(More toggles will appear here as new optional
- features ship.)
+column "confirmed_at" can only be updated to DEFAULT
 ```
 
-## Why this approach
+The current `public.admin_approve_user` function tries to write directly to `auth.users.confirmed_at`:
 
-- **Per-org, server-side flag** — admins control behavior for their whole org without code changes; super admins can also adjust on behalf of any org.
-- **Sales reps see the change automatically** within React Query's staleTime, no redeploy.
-- **Code preserved, not deleted** — flipping the toggle restores the full Schedule Follow-Up flow with zero engineering work.
-- **Extensible pattern** — the same `org_features` table + `FeatureFlagsManager` UI scales to future toggles (e.g., voice notes, business card scanner).
+```sql
+UPDATE auth.users
+SET email_confirmed_at = COALESCE(email_confirmed_at, now()),
+    confirmed_at = COALESCE(confirmed_at, now())
+WHERE id = _user_id
+  AND email_confirmed_at IS NULL;
+```
+
+In Supabase's auth schema, `confirmed_at` is a **generated column** computed from `email_confirmed_at` and `phone_confirmed_at`. Postgres rejects any direct write to it (only `DEFAULT` is allowed), which aborts the whole transaction — so the profile never gets marked approved either.
+
+## Fix
+
+Single migration that replaces `public.admin_approve_user` to update only `email_confirmed_at`. Postgres recomputes `confirmed_at` automatically.
+
+### Migration
+
+```sql
+CREATE OR REPLACE FUNCTION public.admin_approve_user(_user_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+DECLARE
+  _target_org_id uuid;
+  _caller_org_id uuid;
+BEGIN
+  -- Only admins / super admins
+  IF NOT (public.has_role(auth.uid(), 'admin') OR public.is_super_admin(auth.uid())) THEN
+    RAISE EXCEPTION 'Unauthorised';
+  END IF;
+
+  -- Same-org check (super admins bypass)
+  IF NOT public.is_super_admin(auth.uid()) THEN
+    SELECT org_id INTO _target_org_id FROM public.profiles WHERE user_id = _user_id;
+    SELECT public.get_user_org_id(auth.uid()) INTO _caller_org_id;
+    IF _target_org_id IS NULL OR _target_org_id <> _caller_org_id THEN
+      RAISE EXCEPTION 'Cannot approve users outside your organization';
+    END IF;
+  END IF;
+
+  -- Mark approved on profile
+  UPDATE public.profiles
+  SET manually_approved_by = auth.uid(),
+      manually_approved_at = now(),
+      email_confirmed = true
+  WHERE user_id = _user_id;
+
+  -- Confirm email; confirmed_at is generated and updates automatically
+  UPDATE auth.users
+  SET email_confirmed_at = now()
+  WHERE id = _user_id
+    AND email_confirmed_at IS NULL;
+END;
+$$;
+```
+
+### What stays unchanged
+
+- All RLS policies on `profiles`, `org_features`, etc.
+- `PendingUsersSection.tsx` and the `list-pending-auth-status` / `resend-verification` edge functions — no client changes needed.
+- The "Approve Now" button will work as soon as the migration runs.
 
 ## Files touched
 
-- `supabase/migrations/<new>.sql` — create `org_features` table + RLS policies.
-- `src/hooks/useData.ts` — add `useOrgFeatures()` and `useUpdateOrgFeatures()`.
-- `src/components/FeatureFlagsManager.tsx` — new admin component.
-- `src/pages/Settings.tsx` — add "Features" tab (admin-only).
-- `src/components/LeadCaptureDialog.tsx` — gate Schedule Follow-Up UI + submission behind the flag.
+- `supabase/migrations/<new-timestamp>_fix_admin_approve_user.sql` — single `CREATE OR REPLACE FUNCTION` statement above.
 
