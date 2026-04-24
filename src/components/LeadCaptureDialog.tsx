@@ -501,58 +501,75 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 <Label className="text-xs">Current Solution (optional)</Label>
                 <Input value={currentSolution} onChange={(e) => setCurrentSolution(e.target.value)} placeholder="e.g. Salesforce, HubSpot, Excel" />
               </div>
-              <h3 className="text-sm font-semibold text-muted-foreground">BANT QUALIFICATION</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Budget</Label>
-                  <Select value={budget} onValueChange={setBudget}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="exploring">Exploring</SelectItem>
-                      <SelectItem value="no_budget">No Budget</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="relative rounded-lg border border-primary/20 border-t-2 border-t-primary/40 bg-primary/[0.03] p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="h-6 w-6 shrink-0 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center">1</div>
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-wider text-primary/70 font-medium">Step 1 of 2 · Qualify the opportunity</div>
+                    <h3 className="text-sm font-semibold text-foreground">BANT Qualification</h3>
+                    <p className="text-xs text-muted-foreground">Score budget, authority, timeline, and company size.</p>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Authority</Label>
-                  <Select value={authority} onValueChange={setAuthority}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="decision_maker">Decision Maker</SelectItem>
-                      <SelectItem value="influencer">Influencer</SelectItem>
-                      <SelectItem value="researcher">Researcher</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Timeline</Label>
-                  <Select value={timeline} onValueChange={setTimeline}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="immediate">Immediate</SelectItem>
-                      <SelectItem value="3_months">3 Months</SelectItem>
-                      <SelectItem value="6_months">6 Months</SelectItem>
-                      <SelectItem value="1_year_plus">1 Year+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Employees</Label>
-                  <Select value={employees} onValueChange={setEmployees}>
-                    <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1-50">1–50</SelectItem>
-                      <SelectItem value="50-200">50–200</SelectItem>
-                      <SelectItem value="200-500">200–500</SelectItem>
-                      <SelectItem value="500-1000">500–1,000</SelectItem>
-                      <SelectItem value="1000+">1,000+</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Budget</Label>
+                    <Select value={budget} onValueChange={setBudget}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="confirmed">Confirmed</SelectItem>
+                        <SelectItem value="exploring">Exploring</SelectItem>
+                        <SelectItem value="no_budget">No Budget</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Authority</Label>
+                    <Select value={authority} onValueChange={setAuthority}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="decision_maker">Decision Maker</SelectItem>
+                        <SelectItem value="influencer">Influencer</SelectItem>
+                        <SelectItem value="researcher">Researcher</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Timeline</Label>
+                    <Select value={timeline} onValueChange={setTimeline}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediate</SelectItem>
+                        <SelectItem value="3_months">3 Months</SelectItem>
+                        <SelectItem value="6_months">6 Months</SelectItem>
+                        <SelectItem value="1_year_plus">1 Year+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Employees</Label>
+                    <Select value={employees} onValueChange={setEmployees}>
+                      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1-50">1–50</SelectItem>
+                        <SelectItem value="50-200">50–200</SelectItem>
+                        <SelectItem value="200-500">200–500</SelectItem>
+                        <SelectItem value="500-1000">500–1,000</SelectItem>
+                        <SelectItem value="1000+">1,000+</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Needs (select all that apply)</Label>
+
+              <div className="relative rounded-lg border border-primary/20 border-t-2 border-t-primary/40 bg-primary/[0.03] p-4 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="h-6 w-6 shrink-0 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center justify-center">2</div>
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] uppercase tracking-wider text-primary/70 font-medium">Step 2 of 2 · Interest areas</div>
+                    <h3 className="text-sm font-semibold text-foreground">Needs</h3>
+                    <p className="text-xs text-muted-foreground">Tag the modules they're interested in.</p>
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {needOptions.map((need) => (
                     <label key={need} className="flex items-center gap-1.5 text-xs cursor-pointer">
