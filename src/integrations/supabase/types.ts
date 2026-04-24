@@ -307,6 +307,35 @@ export type Database = {
           },
         ]
       }
+      org_features: {
+        Row: {
+          org_id: string
+          schedule_follow_up: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          org_id: string
+          schedule_follow_up?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          org_id?: string
+          schedule_follow_up?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_features_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
           created_at: string
