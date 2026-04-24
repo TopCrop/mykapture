@@ -2,62 +2,86 @@
 
 ## Goal
 
-Wrap the **BANT Qualification** and **Needs** sections in Step 2 of Full Mode inside two visually distinct, bordered "card" containers so users perceive them as deliberate, premium qualification layers — not loose form fields. Make Step 2 feel like a guided, captivating qualification experience.
+Two changes:
+1. **Hide Schedule Follow-Up** in the Lead Capture dialog by default (preserve code).
+2. **Add a new "Features" admin tab** in Settings where admins can toggle org-level feature flags. The first flag is "Schedule Follow-Up" — when enabled by an admin, the Schedule Follow-Up section reappears for sales reps in their lead capture flow. When disabled (default), it stays hidden.
 
-## Visual Design
+## Design
 
-Two stacked panels, each with:
+### A. New `org_features` table (per-org feature flags)
 
-- **Subtle teal-tinted border** (`border-primary/20`) and soft inner background (`bg-primary/[0.03]`) — picks up the Kapture teal accent without shouting.
-- **Rounded corners** (`rounded-lg`) and generous internal padding (`p-4`).
-- **Numbered step badge** in the top-left corner — small circular teal chip showing **"1"** and **"2"** so users immediately read these as two qualification stages.
-- **Section title** next to the badge (e.g. "BANT Qualification") with a small **uppercase eyebrow label** above it ("Step 1 of 2 · Qualify the opportunity").
-- **One-line helper subtitle** under each title explaining purpose:
-  - BANT card: *"Score budget, authority, timeline, and company size."*
-  - Needs card: *"Tag the modules they're interested in."*
-- **Soft top accent line** (`border-t-2 border-primary/40`) on each card for a "tab" feel.
+Schema:
+```text
+org_features
+  org_id          uuid PK (FK → organizations, one row per org)
+  schedule_follow_up   boolean  default false
+  updated_at      timestamptz   default now()
+  updated_by      uuid          (auth.uid)
+```
+- RLS:
+  - SELECT: any org member (`org_id = get_user_org_id(auth.uid())`) OR super admin
+  - INSERT/UPDATE: only admins of the org OR super admin
+  - No DELETE
+- Auto-create a row (all flags = false) when any user reads features for an org without one (handled client-side via upsert, or via trigger on org creation — we'll use lazy upsert from the admin Features panel).
 
-### Layout (Step 2)
+### B. New admin tab: **"Features"** in `src/pages/Settings.tsx`
+
+- Add `<TabsTrigger value="features">` with a `Sparkles`/`ToggleRight` icon (admin-only, alongside Organization/Team/Solutions).
+- New component `src/components/FeatureFlagsManager.tsx`:
+  - Card list of feature toggles with title + description + `Switch`.
+  - First (and only) entry:
+    - **Schedule Follow-Up** — *"Allow sales reps to schedule a follow-up call/meeting from the lead capture flow. Off by default."*
+  - Saves via upsert to `org_features` on toggle, optimistic UI, toasts on success/error, React Query invalidation.
+  - Designed to be extensible — adding future toggles is just one more `<FeatureToggleRow>` entry.
+
+### C. Hook: `useOrgFeatures()` in `src/hooks/useData.ts`
+
+- Fetches the row for the current `orgId` (defaults to `{ schedule_follow_up: false }` if no row exists).
+- Uses CACHE_DEFAULTS staleTime so the toggle takes effect within 2 minutes for sales reps (or instantly on next page load).
+- Companion `useUpdateOrgFeatures()` mutation that upserts and invalidates.
+
+### D. Gate Schedule Follow-Up in `src/components/LeadCaptureDialog.tsx`
+
+- Read flag: `const { data: features } = useOrgFeatures(); const showFollowUp = !!features?.schedule_follow_up;`
+- Wrap the Schedule Follow-Up block (lines ~583–663) and the Step-3 review summary (lines ~723–728) with `{showFollowUp && (...)}`.
+- In `handleSubmit`, gate the `createBooking.mutateAsync(...)` call with `if (showFollowUp && bookFollowUp && followUpDate && created) { ... }` so no booking is ever created when the feature is off.
+- All state (`bookFollowUp`, `followUpDate`, etc.) stays declared — zero rework when toggled back on.
+
+### E. What stays unchanged
+
+- Quick Mode — no Schedule Follow-Up there to begin with.
+- Step 1, BANT card, Needs card, Step 3 review (other than the conditional follow-up summary line) — untouched.
+- `LeadDetailDialog.tsx` Schedule Follow-Up form — **not** affected (this is post-capture and stays available).
+- All other Settings tabs unchanged.
+
+## Layout (new Features tab)
 
 ```text
-┌─ Current Solution (unchanged, sits above) ─────────┐
+Settings  ›  Features
 
-╔═══ teal accent line ═══════════════════════════════╗
-║  [1]  STEP 1 OF 2 · QUALIFY THE OPPORTUNITY        ║
-║       BANT Qualification                           ║
-║       Score budget, authority, timeline, size.     ║
-║                                                    ║
-║   Budget [▼]            Authority [▼]              ║
-║   Timeline [▼]          Employees [▼]              ║
-╚════════════════════════════════════════════════════╝
+┌────────────────────────────────────────────────┐
+│ ◐ Schedule Follow-Up                  [ OFF ]  │
+│   Let sales reps book a follow-up call or      │
+│   meeting from the lead capture dialog.        │
+│   Off by default.                              │
+└────────────────────────────────────────────────┘
 
-╔═══ teal accent line ═══════════════════════════════╗
-║  [2]  STEP 2 OF 2 · INTEREST AREAS                 ║
-║       Needs                                        ║
-║       Tag the modules they're interested in.       ║
-║                                                    ║
-║   ☐ ATS Hire   ☐ Payroll   ☐ Time & Attendance     ║
-║   ☐ Reporting  ☐ PMS       ☐ L&D   ☐ PSA  ...      ║
-╚════════════════════════════════════════════════════╝
-
-[Schedule Follow-Up section — unchanged below]
+(More toggles will appear here as new optional
+ features ship.)
 ```
 
-## Implementation
+## Why this approach
 
-**File:** `src/components/LeadCaptureDialog.tsx` (Step 2 block, lines ~498–564)
+- **Per-org, server-side flag** — admins control behavior for their whole org without code changes; super admins can also adjust on behalf of any org.
+- **Sales reps see the change automatically** within React Query's staleTime, no redeploy.
+- **Code preserved, not deleted** — flipping the toggle restores the full Schedule Follow-Up flow with zero engineering work.
+- **Extensible pattern** — the same `org_features` table + `FeatureFlagsManager` UI scales to future toggles (e.g., voice notes, business card scanner).
 
-1. Wrap the BANT grid (Budget / Authority / Timeline / Employees) inside a `<div>` with classes:  
-   `relative rounded-lg border border-primary/20 border-t-2 border-t-primary/40 bg-primary/[0.03] p-4 space-y-3`
-2. Add header row: numbered teal chip (`h-6 w-6 rounded-full bg-primary/15 text-primary text-xs font-semibold`) + eyebrow label (`text-[10px] uppercase tracking-wider text-primary/70`) + title (`text-sm font-semibold text-foreground`) + helper subtitle (`text-xs text-muted-foreground`).
-3. Repeat the same wrapper around the Needs section, with chip "2" and the Needs-specific labels.
-4. Replace the existing plain `<h3>BANT QUALIFICATION</h3>` and the bare Needs `<Label>` since they are now part of the card headers.
-5. No logic, state, or data changes — purely JSX + Tailwind. Quick Mode and Steps 1/3 untouched.
+## Files touched
 
-## Why this works
-
-- The numbered chips and "Step X of 2" eyebrows make it unmistakable that these are two deliberate qualification stages, not optional clutter.
-- Teal-tinted borders + accent line tie into the existing Kapture brand palette without introducing new colors.
-- Helper subtitles answer "why am I filling this in?" in one glance, lifting completion rates.
-- Cards visually separate qualification (BANT/Needs) from the follow-up scheduling block below, improving scannability.
+- `supabase/migrations/<new>.sql` — create `org_features` table + RLS policies.
+- `src/hooks/useData.ts` — add `useOrgFeatures()` and `useUpdateOrgFeatures()`.
+- `src/components/FeatureFlagsManager.tsx` — new admin component.
+- `src/pages/Settings.tsx` — add "Features" tab (admin-only).
+- `src/components/LeadCaptureDialog.tsx` — gate Schedule Follow-Up UI + submission behind the flag.
 
