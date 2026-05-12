@@ -591,9 +591,11 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
           )}
 
           {scanning && (
-            <div className="flex items-center justify-center gap-2 py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="text-sm text-muted-foreground">Extracting contact info…</span>
+            <div className="flex flex-col items-center gap-3 py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground animate-pulse">
+                {scanStatus ?? "Extracting contact info…"}
+              </p>
             </div>
           )}
 
