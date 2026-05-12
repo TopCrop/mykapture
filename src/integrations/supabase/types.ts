@@ -285,6 +285,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "leads_captured_by_fkey"
+            columns: ["captured_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "leads_duplicate_of_fkey"
             columns: ["duplicate_of"]
             isOneToOne: false
