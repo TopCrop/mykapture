@@ -256,7 +256,7 @@ const LeadsPage = () => {
         l.event_id ? eventMap.get(l.event_id) || "Unknown" : "No Event",
         l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
         l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
-        profileMap.get(l.captured_by) || "Unknown",
+        repName(l as LeadWithProfile),
         (l as any).is_duplicate ? "Yes" : "No",
         dupOfLead ? dupOfLead.name : "",
         new Date(l.created_at).toLocaleString(),
