@@ -11,7 +11,6 @@ import LandingPage from "./pages/Landing";
 import Index from "./pages/Index";
 import LeadsPage from "./pages/Leads";
 import EventsPage from "./pages/Events";
-import AnalyticsPage from "./pages/Analytics";
 import SettingsPage from "./pages/Settings";
 import DocumentationPage from "./pages/Documentation";
 import AuthPage from "./pages/Auth";
@@ -22,9 +21,13 @@ import DownloadDeck from "./pages/DownloadDeck";
 import OrgSetupPage from "./pages/OrgSetup";
 import SuperAdminPage from "./pages/SuperAdmin";
 import OrgPendingPage from "./pages/OrgPending";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
+
+// Lazy-loaded: Recharts (~480KB) only fetched when analytics page is visited
+const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 
 const queryClient = new QueryClient();
 
@@ -62,7 +65,7 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><Index /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute><LeadsPage /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute><EventsPage /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute allowedRoles={["admin", "manager", "super_admin"]}><AnalyticsPage /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute allowedRoles={["admin", "manager", "super_admin"]}><Suspense fallback={<div className="flex items-center justify-center h-screen"><Loader2 className="animate-spin text-primary" /></div>}><AnalyticsPage /></Suspense></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/docs" element={<ProtectedRoute allowedRoles={["admin", "super_admin"]}><DocumentationPage /></ProtectedRoute>} />
               <Route path="/super-admin" element={<ProtectedRoute allowedRoles={["super_admin"]}><SuperAdminPage /></ProtectedRoute>} />
