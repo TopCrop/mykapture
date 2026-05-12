@@ -11,7 +11,13 @@ serve(async (req) => {
   }
 
   try {
-    const { imageBase64 } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    if (body.ping === true) {
+      return new Response(JSON.stringify({ status: "warm" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { imageBase64 } = body;
     if (!imageBase64) {
       return new Response(JSON.stringify({ error: "No image provided" }), {
         status: 400,
