@@ -336,7 +336,6 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     // Resize for upload (max 800px, JPEG quality 0.65)
     const resized = await resizeDataUrl(dataUrl, 800, 800, 0.65);
     stopCamera();
-    const resized = await resizeDataUrl(dataUrl, 800, 800, 0.5);
     setPreview(resized);
     processBase64(resized);
   }, [stopCamera]);
