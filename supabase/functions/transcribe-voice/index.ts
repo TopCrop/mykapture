@@ -31,7 +31,13 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, format = "webm" } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    if (body.ping === true) {
+      return new Response(JSON.stringify({ status: "warm" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { audioBase64, format = "webm" } = body;
     if (!audioBase64) {
       return new Response(JSON.stringify({ error: "No audio provided" }), {
         status: 400,
