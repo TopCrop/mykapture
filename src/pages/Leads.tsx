@@ -112,7 +112,6 @@ const LEADS_PER_PAGE = 25;
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
-  const { data: profiles = [] } = useProfiles();
   const { user, isSalesRep, isAdmin, isManager } = useAuth();
   const deleteLead = useDeleteLead();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,21 +134,20 @@ const LeadsPage = () => {
     return map;
   }, [events]);
 
-  // Build profile lookup for rep names
-  const profileMap = useMemo(() => {
-    const map = new Map<string, string>();
-    profiles.forEach((p) => map.set(p.user_id, p.display_name || "Unknown"));
-    return map;
-  }, [profiles]);
+  // Rep name resolved directly from the joined captured_by_profile
+  const repName = (lead: LeadWithProfile) =>
+    lead.captured_by_profile?.display_name || "Unknown";
 
-  // Build unique reps list for filter
+  // Build unique reps list for filter from embedded profile data
   const uniqueReps = useMemo(() => {
-    const repIds = [...new Set(leads.map((l) => l.captured_by))];
-    return repIds.map((id) => {
-      const profile = profiles.find((p) => p.user_id === id);
-      return { id, name: profile?.display_name || "Unknown" };
+    const map = new Map<string, string>();
+    (leads as LeadWithProfile[]).forEach((l) => {
+      if (!map.has(l.captured_by)) {
+        map.set(l.captured_by, l.captured_by_profile?.display_name || "Unknown");
+      }
     });
-  }, [leads, profiles]);
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [leads]);
 
   useEffect(() => {
     const classification = searchParams.get("classification");
