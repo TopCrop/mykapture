@@ -406,7 +406,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
 
   const processImage = async (file: File) => {
     try {
-      const dataUrl = await resizeImage(file, 800, 800, 0.5);
+      const dataUrl = await resizeImage(file, 800, 800, 0.65);
       setPreview(dataUrl);
       processBase64(dataUrl);
     } catch (error: any) {
