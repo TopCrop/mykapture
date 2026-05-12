@@ -332,7 +332,9 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     croppedCanvas.height = sHeight;
     const croppedCtx = croppedCanvas.getContext("2d")!;
     croppedCtx.drawImage(video, sx, sy, sWidth, sHeight, 0, 0, sWidth, sHeight);
-    const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.8);
+    const dataUrl = croppedCanvas.toDataURL("image/jpeg", 0.65);
+    // Resize for upload (max 800px, JPEG quality 0.65)
+    const resized = await resizeDataUrl(dataUrl, 800, 800, 0.65);
     stopCamera();
     const resized = await resizeDataUrl(dataUrl, 800, 800, 0.5);
     setPreview(resized);
