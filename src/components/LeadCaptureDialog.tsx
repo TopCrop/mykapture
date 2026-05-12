@@ -16,7 +16,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ClassificationBadge } from "@/components/LeadBadges";
 import { BusinessCardScanner } from "@/components/BusinessCardScanner";
 import { VoiceNoteRecorder } from "@/components/VoiceNoteRecorder";
-import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Pencil, Globe, Info } from "lucide-react";
+import { Loader2, Sparkles, Camera, Mic, CalendarIcon, Clock, Zap, AlertTriangle, Globe, Info } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
