@@ -11,7 +11,6 @@ import LandingPage from "./pages/Landing";
 import Index from "./pages/Index";
 import LeadsPage from "./pages/Leads";
 import EventsPage from "./pages/Events";
-import AnalyticsPage from "./pages/Analytics";
 import SettingsPage from "./pages/Settings";
 import DocumentationPage from "./pages/Documentation";
 import AuthPage from "./pages/Auth";
@@ -22,9 +21,13 @@ import DownloadDeck from "./pages/DownloadDeck";
 import OrgSetupPage from "./pages/OrgSetup";
 import SuperAdminPage from "./pages/SuperAdmin";
 import OrgPendingPage from "./pages/OrgPending";
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { initOfflineSync } from "@/lib/offlineQueue";
 import { toast } from "sonner";
+
+// Lazy-loaded: Recharts (~480KB) only fetched when analytics page is visited
+const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 
 const queryClient = new QueryClient();
 
