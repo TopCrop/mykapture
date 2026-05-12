@@ -51,6 +51,18 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [scannerOpen, setScannerOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<"quick" | "full">(mode);
 
+  // Pre-warm Edge Functions on dialog open to avoid cold-start latency
+  useEffect(() => {
+    if (!open) return;
+    const prewarm = async () => {
+      await Promise.allSettled([
+        supabase.functions.invoke('scan-business-card', { body: { ping: true } }),
+        supabase.functions.invoke('transcribe-voice', { body: { ping: true } }),
+      ]);
+    };
+    prewarm();
+  }, [open]);
+
   // Contact info
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
