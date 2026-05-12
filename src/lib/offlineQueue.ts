@@ -29,21 +29,35 @@ export function clearOfflineQueue() {
 
 export async function syncOfflineQueue(): Promise<{ synced: number; failed: number }> {
   const queue = getOfflineQueue();
-  if (queue.length === 0) return { synced: 0, failed: 0 };
+  const queuedLeads = queue.map(({ _queuedAt, ...lead }) => lead);
 
+  if (queuedLeads.length === 0) return { synced: 0, failed: 0 };
+
+  // Try batch insert first
+  const { data, error } = await supabase
+    .from("leads")
+    .insert(queuedLeads)
+    .select();
+
+  if (!error) {
+    clearOfflineQueue();
+    const count = data?.length || queuedLeads.length;
+    toast.success(`${count} offline lead${count !== 1 ? "s" : ""} synced successfully`);
+    return { synced: count, failed: 0 };
+  }
+
+  // Batch failed — fall back to individual inserts to identify which ones fail
   let synced = 0;
   let failed = 0;
   const remaining: typeof queue = [];
 
-  for (const item of queue) {
-    const { _queuedAt, ...lead } = item;
-    try {
-      const { error } = await supabase.from("leads").insert(lead);
-      if (error) throw error;
-      synced++;
-    } catch {
+  for (let i = 0; i < queuedLeads.length; i++) {
+    const { error: singleError } = await supabase.from("leads").insert(queuedLeads[i]);
+    if (singleError) {
       failed++;
-      remaining.push(item);
+      remaining.push(queue[i]);
+    } else {
+      synced++;
     }
   }
 
@@ -52,6 +66,9 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
   } else {
     clearOfflineQueue();
   }
+
+  if (synced > 0) toast.success(`${synced} offline lead${synced !== 1 ? "s" : ""} synced`);
+  if (failed > 0) toast.warning(`${failed} lead${failed !== 1 ? "s" : ""} couldn't sync — will retry on next reconnect`);
 
   return { synced, failed };
 }
