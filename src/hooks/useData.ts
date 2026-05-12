@@ -5,6 +5,12 @@ import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+export type LeadWithProfile = LeadRow & {
+  captured_by_profile?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type LeadUpdate = Database["public"]["Tables"]["leads"]["Update"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
