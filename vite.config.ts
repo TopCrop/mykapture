@@ -43,4 +43,21 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ["react", "react-dom", "@supabase/supabase-js", "@tanstack/react-query"],
+    exclude: ["lucide-react"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-charts": ["recharts"],
+          "vendor-query": ["@tanstack/react-query"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
 }));
