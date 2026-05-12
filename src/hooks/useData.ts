@@ -5,6 +5,12 @@ import { useOrg } from "@/hooks/useOrg";
 import type { Database } from "@/integrations/supabase/types";
 
 type LeadRow = Database["public"]["Tables"]["leads"]["Row"];
+export type LeadWithProfile = LeadRow & {
+  captured_by_profile?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
+};
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 type LeadUpdate = Database["public"]["Tables"]["leads"]["Update"];
 type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -72,14 +78,17 @@ export function useLeads() {
     queryFn: async () => {
       let query = supabase
         .from("leads")
-        .select("id,name,title,company,email,phone,classification,score,sync_status,event_id,captured_by,created_at,updated_at,notes,bant_budget,bant_authority,bant_timeline,bant_employees,bant_need,follow_up_email_sent,follow_up_email_sent_at,voice_note_url,transcription,website")
+        .select(`
+          id,name,title,company,email,phone,classification,score,sync_status,event_id,captured_by,created_at,updated_at,notes,bant_budget,bant_authority,bant_timeline,bant_employees,bant_need,follow_up_email_sent,follow_up_email_sent_at,voice_note_url,transcription,website,
+          captured_by_profile:profiles!leads_captured_by_fkey(display_name,avatar_url)
+        `)
         .order("created_at", { ascending: false });
       if (!canSeeAll && user?.id) {
         query = query.eq("captured_by", user.id);
       }
       const { data, error } = await query;
       if (error) throw error;
-      return data as LeadRow[];
+      return data as unknown as LeadWithProfile[];
     },
     ...CACHE_DEFAULTS,
   });

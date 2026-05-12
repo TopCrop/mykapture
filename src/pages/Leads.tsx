@@ -1,6 +1,6 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ClassificationBadge, SyncBadge, ScoreBadge } from "@/components/LeadBadges";
-import { useLeads, useEvents, useDeleteLead, useProfiles } from "@/hooks/useData";
+import { useLeads, useEvents, useDeleteLead, type LeadWithProfile } from "@/hooks/useData";
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -112,7 +112,6 @@ const LEADS_PER_PAGE = 25;
 const LeadsPage = () => {
   const { data: leads = [], isLoading } = useLeads();
   const { data: events = [] } = useEvents();
-  const { data: profiles = [] } = useProfiles();
   const { user, isSalesRep, isAdmin, isManager } = useAuth();
   const deleteLead = useDeleteLead();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -135,21 +134,20 @@ const LeadsPage = () => {
     return map;
   }, [events]);
 
-  // Build profile lookup for rep names
-  const profileMap = useMemo(() => {
-    const map = new Map<string, string>();
-    profiles.forEach((p) => map.set(p.user_id, p.display_name || "Unknown"));
-    return map;
-  }, [profiles]);
+  // Rep name resolved directly from the joined captured_by_profile
+  const repName = (lead: LeadWithProfile) =>
+    lead.captured_by_profile?.display_name || "Unknown";
 
-  // Build unique reps list for filter
+  // Build unique reps list for filter from embedded profile data
   const uniqueReps = useMemo(() => {
-    const repIds = [...new Set(leads.map((l) => l.captured_by))];
-    return repIds.map((id) => {
-      const profile = profiles.find((p) => p.user_id === id);
-      return { id, name: profile?.display_name || "Unknown" };
+    const map = new Map<string, string>();
+    (leads as LeadWithProfile[]).forEach((l) => {
+      if (!map.has(l.captured_by)) {
+        map.set(l.captured_by, l.captured_by_profile?.display_name || "Unknown");
+      }
     });
-  }, [leads, profiles]);
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [leads]);
 
   useEffect(() => {
     const classification = searchParams.get("classification");
@@ -258,7 +256,7 @@ const LeadsPage = () => {
         l.event_id ? eventMap.get(l.event_id) || "Unknown" : "No Event",
         l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
         l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
-        profileMap.get(l.captured_by) || "Unknown",
+        repName(l as LeadWithProfile),
         (l as any).is_duplicate ? "Yes" : "No",
         dupOfLead ? dupOfLead.name : "",
         new Date(l.created_at).toLocaleString(),
@@ -418,7 +416,7 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden md:table-cell text-xs text-muted-foreground">{lead.event_id ? eventMap.get(lead.event_id) || "Unknown" : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
-                        {(isAdmin || isManager) && <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
+                        {(isAdmin || isManager) && <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">{repName(lead as LeadWithProfile)}</td>}
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
