@@ -360,6 +360,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
 
     setScanning(true);
     setResult(null);
+    setScanStatus("Uploading image...");
     try {
       const base64 = dataUrl.split(",")[1];
       console.log("Base64 length:", base64.length, "chars (~", Math.round(base64.length * 0.75 / 1024), "KB)");
@@ -367,6 +368,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 30000);
 
+      setScanStatus("Reading card with AI...");
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scan-business-card`,
         {
@@ -388,11 +390,14 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
         throw new Error(err.error || "Scan failed");
       }
 
+      setScanStatus("Extracting contact details...");
       const data = await response.json();
       setResult(data.contact);
+      setScanStatus(null);
       toast.success("Business card scanned successfully!");
     } catch (error: any) {
       console.error("Scanner error:", error);
+      setScanStatus(null);
       if (error instanceof TypeError || error.name === "TypeError") {
         enterManualMode();
       } else if (error.name === "AbortError") {
