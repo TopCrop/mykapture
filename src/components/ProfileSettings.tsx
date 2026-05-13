@@ -222,6 +222,27 @@ export function ProfileSettings() {
           Save Changes
         </Button>
       </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="glass-card p-6 space-y-4"
+      >
+        <div>
+          <h3 className="font-semibold text-sm">Scanner</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Preferences for the business card scanner.</p>
+        </div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
+            <Label className="text-xs">Auto-save scanned cards to device</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Automatically downloads each scanned card photo so you can refer back later. On iOS, the browser shows a one-tap confirmation.
+            </p>
+          </div>
+          <Switch checked={autoSaveCards} onCheckedChange={setAutoSaveCards} />
+        </div>
+      </motion.div>
     </div>
   );
 }
