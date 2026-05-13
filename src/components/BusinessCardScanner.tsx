@@ -161,6 +161,21 @@ function resizeDataUrl(dataUrl: string, maxWidth = 800, maxHeight = 800, quality
   });
 }
 
+function downloadPreview(dataUrl: string, contact?: { name?: string; company?: string } | null) {
+  try {
+    const raw = contact?.company || contact?.name || `${Date.now()}`;
+    const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || `${Date.now()}`;
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `business-card-${slug}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.warn("Auto-save card failed:", e);
+  }
+}
+
 export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCardScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
