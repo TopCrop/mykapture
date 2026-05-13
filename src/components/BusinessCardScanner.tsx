@@ -395,6 +395,10 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       setResult(data.contact);
       setScanStatus(null);
       toast.success("Business card scanned successfully!");
+      // Auto-save scanned card to device (user-controllable in Profile settings)
+      if (localStorage.getItem("kapture.autoSaveCards") !== "false") {
+        downloadPreview(dataUrl, data.contact);
+      }
     } catch (error: any) {
       console.error("Scanner error:", error);
       setScanStatus(null);
