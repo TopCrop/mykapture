@@ -726,12 +726,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
                   Use This Contact
                 </Button>
                 {preview && (
-                  <Button size="sm" variant="outline" onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = preview;
-                    link.download = `business-card-${Date.now()}.jpg`;
-                    link.click();
-                  }}>
+                  <Button size="sm" variant="outline" onClick={() => downloadPreview(preview, result)}>
                     <Download className="h-3.5 w-3.5 mr-1" /> Save Photo
                   </Button>
                 )}
