@@ -1,39 +1,34 @@
-## Problem
+## Goal
 
-You reported a sales rep seeing all leads in their org. The current Postgres RLS policy on `public.leads` already restricts SELECT to:
+After a successful business card scan, automatically save the cropped photo to the rep's device — instead of requiring them to tap "Save Photo". Reps often want to refer back to the original card later.
 
-```text
-org_id = my_org
-AND (captured_by = me OR I'm admin OR I'm manager)
-OR  I'm super_admin
-```
+## Behavior
 
-So at the database layer, a true sales rep should only ever receive their own captured leads. Most likely the rep you observed actually has an elevated role, or had cached admin-era data in React Query. Either way, the client today blindly trusts whatever the server returns and never explicitly scopes the query — that's a correctness gap worth closing.
+- After a scan completes successfully (live camera or uploaded image), trigger a download of the cropped JPEG to the device.
+  - Android Chrome: saves silently to Downloads.
+  - iOS Safari: shows a one-tap "Download" confirmation (browser limitation — cannot be bypassed).
+- Filename: `business-card-{company-or-name-or-timestamp}.jpg` so reps can find it later by company.
+- Do not auto-download if the scan failed / fell back to manual entry (no useful image to keep).
+- Do not auto-download in QR-code mode (no card photo, just decoded data).
+- Keep the existing manual "Save Photo" button as a fallback (in case the auto-save was dismissed).
 
-## Fix (defense in depth)
+## User control
 
-One change in `src/hooks/useData.ts`:
+Add a per-user preference: "Auto-save scanned cards to device" (default: ON), stored in `localStorage` under `kapture.autoSaveCards`. Surface as a small `Switch` in `ProfileSettings.tsx` under a "Scanner" section.
 
-- `useLeads()` becomes role-aware. It reads `userRole` and `user.id` from `useAuth()`. If the user is **not** admin/manager/super_admin, the Supabase query gets an explicit `.eq('captured_by', user.id)` filter. The query key becomes `['leads', userRole, user.id]` so cached admin data never leaks across role/user changes.
+## Technical changes
 
-That's it for the data layer. RLS already enforces the same rule server-side; the client filter just guarantees the UI matches even if (a) someone weakens the policy in future, (b) React Query has stale cache from a different role, or (c) an admin-era cached payload survives a sign-out/sign-in.
+1. `src/components/BusinessCardScanner.tsx`
+   - Extract a small helper `downloadPreview(preview, result)` that builds a sane filename from `result.company || result.name || Date.now()` (sanitized: lowercase, non-alphanum → `-`).
+   - In the scan success path (after `setResult(...)` for both the camera capture and the file-upload paths), read `localStorage.getItem('kapture.autoSaveCards')` (default `'true'`) and call `downloadPreview` when enabled and `!qrMode`.
+   - Replace the inline download logic in the existing "Save Photo" button (lines ~710–717) with the same helper for consistency.
 
-## UI consistency pass (`src/pages/Leads.tsx`)
+2. `src/components/ProfileSettings.tsx`
+   - Add a "Scanner" section with a Shadcn `Switch` labelled "Auto-save scanned business cards to device", help text noting iOS shows a one-tap confirmation.
+   - Persist to `localStorage` (no DB column needed — this is a device-local preference).
 
-Already correct:
-- "Captured By" column hidden for sales reps (`isAdmin || isManager`).
-- "Rep" filter dropdown hidden for sales reps.
-- Bulk-delete + delete buttons hidden for sales reps.
+## Out of scope
 
-No UI changes needed — once `useLeads()` is scoped, the page automatically shows only the rep's own leads, the rep filter (already hidden) stays hidden, and pagination/CSV export operate on the scoped set.
-
-## What stays unchanged
-
-- RLS policies on `leads` — already correct, no migration.
-- Admin and manager experience — they continue to see all org leads.
-- Super admin — continues to see all leads across all orgs.
-- Dashboard (`Index.tsx`), Analytics, Events pages — all consume `useLeads()`, so they automatically get the scoped result for sales reps without further edits.
-
-## Files touched
-
-- `src/hooks/useData.ts` — make `useLeads()` filter by `captured_by` for sales reps and key the cache on role + user id.
+- No backend storage / no Supabase Storage bucket.
+- No changes to OCR, cropping, compression (already 0.65), or duplicate-check logic.
+- No changes to voice-note recorder.
