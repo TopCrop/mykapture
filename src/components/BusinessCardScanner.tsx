@@ -161,6 +161,21 @@ function resizeDataUrl(dataUrl: string, maxWidth = 800, maxHeight = 800, quality
   });
 }
 
+function downloadPreview(dataUrl: string, contact?: { name?: string; company?: string } | null) {
+  try {
+    const raw = contact?.company || contact?.name || `${Date.now()}`;
+    const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60) || `${Date.now()}`;
+    const link = document.createElement("a");
+    link.href = dataUrl;
+    link.download = `business-card-${slug}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (e) {
+    console.warn("Auto-save card failed:", e);
+  }
+}
+
 export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCardScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -395,6 +410,10 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       setResult(data.contact);
       setScanStatus(null);
       toast.success("Business card scanned successfully!");
+      // Auto-save scanned card to device (user-controllable in Profile settings)
+      if (localStorage.getItem("kapture.autoSaveCards") !== "false") {
+        downloadPreview(dataUrl, data.contact);
+      }
     } catch (error: any) {
       console.error("Scanner error:", error);
       setScanStatus(null);
@@ -707,12 +726,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
                   Use This Contact
                 </Button>
                 {preview && (
-                  <Button size="sm" variant="outline" onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = preview;
-                    link.download = `business-card-${Date.now()}.jpg`;
-                    link.click();
-                  }}>
+                  <Button size="sm" variant="outline" onClick={() => downloadPreview(preview, result)}>
                     <Download className="h-3.5 w-3.5 mr-1" /> Save Photo
                   </Button>
                 )}

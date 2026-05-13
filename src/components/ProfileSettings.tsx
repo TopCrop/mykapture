@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Camera, Loader2, Save, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useMyProfile, useUpdateProfile } from "@/hooks/useData";
@@ -22,6 +23,13 @@ export function ProfileSettings() {
   const [territory, setTerritory] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoSaveCards, setAutoSaveCards] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("kapture.autoSaveCards") !== "false"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("kapture.autoSaveCards", autoSaveCards ? "true" : "false");
+  }, [autoSaveCards]);
 
   // Use local state if edited, otherwise profile data
   const currentName = displayName ?? profile?.display_name ?? "";
@@ -213,6 +221,27 @@ export function ProfileSettings() {
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           Save Changes
         </Button>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+        className="glass-card p-6 space-y-4"
+      >
+        <div>
+          <h3 className="font-semibold text-sm">Scanner</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Preferences for the business card scanner.</p>
+        </div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
+            <Label className="text-xs">Auto-save scanned cards to device</Label>
+            <p className="text-[11px] text-muted-foreground">
+              Automatically downloads each scanned card photo so you can refer back later. On iOS, the browser shows a one-tap confirmation.
+            </p>
+          </div>
+          <Switch checked={autoSaveCards} onCheckedChange={setAutoSaveCards} />
+        </div>
       </motion.div>
     </div>
   );
