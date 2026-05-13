@@ -23,6 +23,13 @@ export function ProfileSettings() {
   const [territory, setTerritory] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [autoSaveCards, setAutoSaveCards] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("kapture.autoSaveCards") !== "false"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("kapture.autoSaveCards", autoSaveCards ? "true" : "false");
+  }, [autoSaveCards]);
 
   // Use local state if edited, otherwise profile data
   const currentName = displayName ?? profile?.display_name ?? "";
