@@ -7,6 +7,7 @@ import {
   FileText,
   LogOut,
   ShieldCheck,
+  Shield,
 } from "lucide-react";
 import { useMyProfile } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
