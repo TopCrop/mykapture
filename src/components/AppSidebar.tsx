@@ -7,6 +7,7 @@ import {
   FileText,
   LogOut,
   ShieldCheck,
+  Shield,
 } from "lucide-react";
 import { useMyProfile } from "@/hooks/useData";
 import { useOrg } from "@/hooks/useOrg";
@@ -54,7 +55,7 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, userRole, signOut } = useAuth();
+  const { user, userRole, signOut, isSuperAdmin } = useAuth();
   const { org } = useOrg();
   const isActive = (path: string) => location.pathname === path;
   const { data: userProfile } = useMyProfile();
@@ -175,6 +176,17 @@ export function AppSidebar() {
                 </div>
               </div>
             </button>
+            {isSuperAdmin && (
+              <NavLink
+                to="/super-admin"
+                end
+                className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                activeClassName="bg-sidebar-accent text-primary font-medium border-l-2 border-primary"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Super Admin
+              </NavLink>
+            )}
             <button onClick={signOut} className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
               <LogOut className="h-3.5 w-3.5" />
               Sign out
