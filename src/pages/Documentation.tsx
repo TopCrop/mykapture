@@ -90,7 +90,7 @@ const DocumentationPage = () => {
                   <li className="flex items-start gap-1.5"><CheckCircle className="h-3 w-3 text-primary mt-0.5 shrink-0" /> Deno edge functions</li>
                   <li className="flex items-start gap-1.5"><CheckCircle className="h-3 w-3 text-primary mt-0.5 shrink-0" /> File storage (voice notes)</li>
                   <li className="flex items-start gap-1.5"><CheckCircle className="h-3 w-3 text-primary mt-0.5 shrink-0" /> OAuth + email auth</li>
-                  <li className="flex items-start gap-1.5"><CheckCircle className="h-3 w-3 text-primary mt-0.5 shrink-0" /> AI Gateway (Gemini)</li>
+                  <li className="flex items-start gap-1.5"><CheckCircle className="h-3 w-3 text-primary mt-0.5 shrink-0" /> Google Gemini API (direct)</li>
                 </ul>
               </InfoCard>
 
