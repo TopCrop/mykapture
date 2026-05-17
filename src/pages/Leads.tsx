@@ -419,6 +419,15 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                         {(isAdmin || isManager) && <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">{repName(lead as LeadWithProfile)}</td>}
+                        <td className="px-5 py-3 hidden lg:table-cell">
+                          {(lead as any).attention_to_name ? (
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${(lead as any).attention_to_user_id ? "bg-primary/15 text-primary border border-primary/30" : "bg-muted text-muted-foreground border border-border"}`}>
+                              {(lead as any).attention_to_name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
