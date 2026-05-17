@@ -286,8 +286,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       captured_by: user.id,
       is_duplicate: duplicateInfo?.is_duplicate ? true : false,
       duplicate_of: duplicateInfo?.is_duplicate ? (duplicateInfo.lead_id ?? null) : null,
-      attention_to_user_id: isQuickMode ? attentionToUserId : null,
-      attention_to_name: isQuickMode ? (attentionToName || null) : null,
+      attention_to_user_id: attentionToUserId,
+      attention_to_name: attentionToName || null,
     } as any;
 
     if (!navigator.onLine) {
@@ -316,7 +316,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       }
 
       // Notify tagged rep
-      if (isQuickMode && attentionToUserId && created) {
+      if (attentionToUserId && created) {
         const captureName = user.user_metadata?.full_name || user.email || "A teammate";
         const leadLabel = `${name}${company ? ` (${company})` : ""}`;
         await supabase.from("notifications" as any).insert({
@@ -604,6 +604,67 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                     )}
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Attention To (optional)</Label>
+                {attentionToName ? (
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                        attentionToUserId
+                          ? "bg-primary/15 text-primary border border-primary/30"
+                          : "bg-muted text-muted-foreground border border-border"
+                      )}
+                    >
+                      <span className="h-4 w-4 rounded-full bg-background/40 flex items-center justify-center text-[9px] font-semibold">
+                        {getInitials(attentionToName)}
+                      </span>
+                      {attentionToName}
+                      <button type="button" onClick={clearAttention} className="hover:opacity-70" aria-label="Clear attention to">
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Input
+                      value={attentionQuery}
+                      onChange={(e) => { setAttentionQuery(e.target.value); setAttentionDropdownOpen(true); }}
+                      onFocus={() => setAttentionDropdownOpen(true)}
+                      onBlur={() => setTimeout(commitAttentionFreeText, 150)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (attentionMatches.length > 0) {
+                            selectAttentionMember(attentionMatches[0] as any);
+                          } else {
+                            commitAttentionFreeText();
+                          }
+                        }
+                      }}
+                      placeholder="@mention or search rep name"
+                    />
+                    {attentionDropdownOpen && attentionMatches.length > 0 && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-md max-h-56 overflow-y-auto">
+                        {attentionMatches.map((m: any) => (
+                          <button
+                            key={m.user_id}
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); selectAttentionMember(m); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-secondary/60"
+                          >
+                            <span className="h-6 w-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-semibold">
+                              {getInitials(m.display_name || "?")}
+                            </span>
+                            <span className="truncate">{m.display_name || "Unnamed"}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">
