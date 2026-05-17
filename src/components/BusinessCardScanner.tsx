@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode, Download } from "lucide-react";
 import { toast } from "sonner";
 import jsQR from "jsqr";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrg } from "@/hooks/useOrg";
 
 interface ExtractedContact {
   name?: string;
