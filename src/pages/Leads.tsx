@@ -247,7 +247,7 @@ const LeadsPage = () => {
 
   // CSV export with event name resolution (#13)
   const exportCsv = () => {
-    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured By", "Is Duplicate", "Duplicate Of", "Captured At"];
+    const headers = ["Name", "Title", "Company", "Email", "Phone", "Event", "Classification", "Score", "Budget", "Authority", "Timeline", "Needs", "Notes", "Captured By", "Attention To", "Is Duplicate", "Duplicate Of", "Captured At"];
     const leadsMap = new Map(filtered.map((l) => [l.id, l]));
     const rows = filtered.map((l) => {
       const dupOfLead = (l as any).duplicate_of ? leadsMap.get((l as any).duplicate_of) : null;
@@ -257,6 +257,7 @@ const LeadsPage = () => {
         l.classification, l.score, l.bant_budget || "", l.bant_authority || "",
         l.bant_timeline || "", (l.bant_need || []).join("; "), (l.notes || "").replace(/\n/g, " "),
         repName(l as LeadWithProfile),
+        (l as any).attention_to_name || "",
         (l as any).is_duplicate ? "Yes" : "No",
         dupOfLead ? dupOfLead.name : "",
         new Date(l.created_at).toLocaleString(),
@@ -383,6 +384,7 @@ const LeadsPage = () => {
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Budget</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Authority</th>
                       {(isAdmin || isManager) && <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Captured By</th>}
+                      <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden lg:table-cell">Attention To</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider hidden sm:table-cell">Sync</th>
                       <th className="px-5 py-3 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
                     </tr>
@@ -417,6 +419,15 @@ const LeadsPage = () => {
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_budget ? bantLabels[lead.bant_budget] : "—"}</td>
                         <td className="px-5 py-3 hidden lg:table-cell text-xs text-muted-foreground">{lead.bant_authority ? bantLabels[lead.bant_authority] : "—"}</td>
                         {(isAdmin || isManager) && <td className="px-5 py-3 hidden sm:table-cell text-xs text-muted-foreground">{repName(lead as LeadWithProfile)}</td>}
+                        <td className="px-5 py-3 hidden lg:table-cell">
+                          {(lead as any).attention_to_name ? (
+                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${(lead as any).attention_to_user_id ? "bg-primary/15 text-primary border border-primary/30" : "bg-muted text-muted-foreground border border-border"}`}>
+                              {(lead as any).attention_to_name}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="px-5 py-3 hidden sm:table-cell"><SyncBadge status={lead.sync_status as SyncStatus} /></td>
                         <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">

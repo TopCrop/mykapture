@@ -429,6 +429,7 @@ const Index = () => {
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Score</th>
                     {(isAdmin || isManager) && <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Captured By</th>}
+                    <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Attention To</th>
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Sync</th>
                   </tr>
                 </thead>
@@ -463,6 +464,15 @@ const Index = () => {
                       <td className="px-5 py-3"><ClassificationBadge classification={lead.classification as LeadClassification} /></td>
                       <td className="px-5 py-3"><ScoreBadge score={lead.score} /></td>
                       {(isAdmin || isManager) && <td className="px-5 py-3 text-xs text-muted-foreground">{profileMap.get(lead.captured_by) || "Unknown"}</td>}
+                      <td className="px-5 py-3">
+                        {(lead as any).attention_to_name ? (
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${(lead as any).attention_to_user_id ? "bg-primary/15 text-primary border border-primary/30" : "bg-muted text-muted-foreground border border-border"}`}>
+                            {(lead as any).attention_to_name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
                       <td className="px-5 py-3"><SyncBadge status={lead.sync_status as any} /></td>
                     </tr>
                   ))}

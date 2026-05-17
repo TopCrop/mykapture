@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions, useOrgFeatures } from "@/hooks/useData";
+import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions, useOrgFeatures, useProfiles } from "@/hooks/useData";
+import { X as XIcon } from "lucide-react";
 import { useOrg } from "@/hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -86,6 +87,46 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [classOverride, setClassOverride] = useState<LeadClassification | "">("");
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
   const [transcription, setTranscription] = useState("");
+
+  // Attention To (Quick mode only)
+  const [attentionToUserId, setAttentionToUserId] = useState<string | null>(null);
+  const [attentionToName, setAttentionToName] = useState("");
+  const [attentionQuery, setAttentionQuery] = useState("");
+  const [attentionDropdownOpen, setAttentionDropdownOpen] = useState(false);
+  const { data: allProfiles = [] } = useProfiles();
+  const orgMembers = useMemo(
+    () => allProfiles.filter((p) => p.org_id === orgId && p.user_id !== user?.id),
+    [allProfiles, orgId, user?.id]
+  );
+  const attentionMatches = useMemo(() => {
+    const raw = attentionQuery.replace(/^@/, "").trim().toLowerCase();
+    if (!raw) return orgMembers.slice(0, 6);
+    return orgMembers
+      .filter((p) => (p.display_name || "").toLowerCase().includes(raw))
+      .slice(0, 6);
+  }, [orgMembers, attentionQuery]);
+  const clearAttention = () => {
+    setAttentionToUserId(null);
+    setAttentionToName("");
+    setAttentionQuery("");
+  };
+  const selectAttentionMember = (member: { user_id: string; display_name: string | null }) => {
+    setAttentionToUserId(member.user_id);
+    setAttentionToName(member.display_name || "");
+    setAttentionQuery("");
+    setAttentionDropdownOpen(false);
+  };
+  const commitAttentionFreeText = () => {
+    const v = attentionQuery.replace(/^@/, "").trim();
+    if (v && !attentionToUserId) {
+      setAttentionToName(v);
+      setAttentionToUserId(null);
+      setAttentionQuery("");
+    }
+    setAttentionDropdownOpen(false);
+  };
+  const getInitials = (n: string) =>
+    n.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
 
   // Calendar booking
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
@@ -190,6 +231,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
     setMeetingType("call"); setBookFollowUp(false); setNameAttempted(false);
     setShowEventWarning(false);
+    setAttentionToUserId(null); setAttentionToName(""); setAttentionQuery(""); setAttentionDropdownOpen(false);
   };
 
   // Card scan triggers duplicate check (#4)
@@ -244,7 +286,9 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       captured_by: user.id,
       is_duplicate: duplicateInfo?.is_duplicate ? true : false,
       duplicate_of: duplicateInfo?.is_duplicate ? (duplicateInfo.lead_id ?? null) : null,
-    };
+      attention_to_user_id: isQuickMode ? attentionToUserId : null,
+      attention_to_name: isQuickMode ? (attentionToName || null) : null,
+    } as any;
 
     if (!navigator.onLine) {
       queueLeadOffline(leadData);
@@ -268,6 +312,18 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
           follow_up_date: bookingDate.toISOString(),
           duration_minutes: parseInt(followUpDuration),
           meeting_type: meetingType,
+        });
+      }
+
+      // Notify tagged rep
+      if (isQuickMode && attentionToUserId && created) {
+        const captureName = user.user_metadata?.full_name || user.email || "A teammate";
+        const leadLabel = `${name}${company ? ` (${company})` : ""}`;
+        await supabase.from("notifications" as any).insert({
+          user_id: attentionToUserId,
+          type: "attention",
+          lead_id: created.id,
+          message: `${captureName} tagged you on a lead: ${leadLabel}`,
         });
       }
 
@@ -385,6 +441,72 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                   <Label className="text-xs">Current Solution (optional)</Label>
                   <Input value={currentSolution} onChange={(e) => setCurrentSolution(e.target.value)} placeholder="e.g. Salesforce, HubSpot, Excel" />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Attention To (optional)</Label>
+                {attentionToName ? (
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+                        attentionToUserId
+                          ? "bg-primary/15 text-primary border border-primary/30"
+                          : "bg-muted text-muted-foreground border border-border"
+                      )}
+                    >
+                      <span className="h-4 w-4 rounded-full bg-background/40 flex items-center justify-center text-[9px] font-semibold">
+                        {getInitials(attentionToName)}
+                      </span>
+                      {attentionToName}
+                      <button
+                        type="button"
+                        onClick={clearAttention}
+                        className="hover:opacity-70"
+                        aria-label="Clear attention to"
+                      >
+                        <XIcon className="h-3 w-3" />
+                      </button>
+                    </span>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Input
+                      value={attentionQuery}
+                      onChange={(e) => { setAttentionQuery(e.target.value); setAttentionDropdownOpen(true); }}
+                      onFocus={() => setAttentionDropdownOpen(true)}
+                      onBlur={() => setTimeout(commitAttentionFreeText, 150)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          if (attentionMatches.length > 0) {
+                            selectAttentionMember(attentionMatches[0] as any);
+                          } else {
+                            commitAttentionFreeText();
+                          }
+                        }
+                      }}
+                      placeholder="@mention or search rep name"
+                    />
+                    {attentionDropdownOpen && attentionMatches.length > 0 && (
+                      <div className="absolute z-50 mt-1 w-full rounded-md border border-border bg-popover shadow-md max-h-56 overflow-y-auto">
+                        {attentionMatches.map((m: any) => (
+                          <button
+                            key={m.user_id}
+                            type="button"
+                            onMouseDown={(e) => { e.preventDefault(); selectAttentionMember(m); }}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-secondary/60"
+                          >
+                            <span className="h-6 w-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-semibold">
+                              {getInitials(m.display_name || "?")}
+                            </span>
+                            <span className="truncate">{m.display_name || "Unnamed"}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1.5">

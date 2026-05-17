@@ -1,31 +1,87 @@
-import { Bell, CalendarIcon, Clock, Check } from "lucide-react";
+import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useUpcomingFollowUps, useUpdateFollowUpBooking } from "@/hooks/useData";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+type Notification = {
+  id: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+  lead_id: string | null;
+};
+
 export function NotificationDropdown() {
-  const { data: followUps = [] } = useUpcomingFollowUps();
-  const updateFollowUp = useUpdateFollowUpBooking();
-  const count = followUps.length;
+  const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
-  const handleItemClick = (leadId: string) => {
+  const { data: notifications = [] } = useQuery({
+    queryKey: ["notifications", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notifications" as any)
+        .select("id,message,read,created_at,lead_id")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data || []) as unknown as Notification[];
+    },
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+  });
+
+  // Realtime subscription so new notifications appear without refresh
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`notifications-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ["notifications", user.id] })
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, queryClient]);
+
+  const unread = notifications.filter((n) => !n.read).length;
+
+  const markRead = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (ids.length === 0) return;
+      const { error } = await supabase
+        .from("notifications" as any)
+        .update({ read: true })
+        .in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications", user?.id] }),
+  });
+
+  const handleClick = (n: Notification) => {
     setOpen(false);
-    navigate(`/leads?leadId=${leadId}`);
+    if (!n.read) markRead.mutate([n.id]);
+    if (n.lead_id) navigate(`/leads?leadId=${n.lead_id}`);
   };
 
-  const handleMarkComplete = async (e: React.MouseEvent, bookingId: string) => {
-    e.stopPropagation();
+  const handleMarkAll = async () => {
+    const ids = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (ids.length === 0) return;
     try {
-      await updateFollowUp.mutateAsync({ id: bookingId, status: "completed" });
-      toast.success("Follow-up marked as completed!");
-    } catch (error: any) {
-      toast.error(error.message);
+      await markRead.mutateAsync(ids);
+      toast.success("All notifications marked as read");
+    } catch (e: any) {
+      toast.error(e.message);
     }
   };
 
@@ -34,65 +90,52 @@ export function NotificationDropdown() {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative hover:bg-secondary">
           <Bell className="h-4 w-4" />
-          {count > 0 && (
+          {unread > 0 && (
             <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-              {count > 9 ? "9+" : count}
+              {unread > 9 ? "9+" : unread}
             </span>
           )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-3 border-b border-border">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Upcoming Follow-ups</h4>
+        <div className="p-3 border-b border-border flex items-center justify-between">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Notifications</h4>
+          {unread > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[10px] gap-1 text-primary hover:bg-primary/10"
+              onClick={handleMarkAll}
+            >
+              <CheckCheck className="h-3 w-3" />
+              Mark all as read
+            </Button>
+          )}
         </div>
-        <div className="max-h-64 overflow-y-auto">
-          {followUps.length === 0 ? (
+        <div className="max-h-72 overflow-y-auto">
+          {notifications.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground">
-              No upcoming follow-ups
+              No notifications yet
             </div>
           ) : (
-            followUps.map((fu: any) => (
-              <div
-                key={fu.id}
-                className="w-full text-left px-3 py-2.5 border-b border-border last:border-0 hover:bg-secondary/30 transition-colors"
+            notifications.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => handleClick(n)}
+                className={`w-full text-left px-3 py-2.5 border-b border-border last:border-0 hover:bg-secondary/30 transition-colors ${!n.read ? "bg-primary/[0.04]" : ""}`}
               >
                 <div className="flex items-start gap-2">
-                  <button
-                    onClick={() => handleItemClick(fu.lead_id)}
-                    className="flex-1 min-w-0 text-left cursor-pointer"
-                  >
-                    <div className="flex items-start gap-2">
-                      <CalendarIcon className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium truncate">
-                          {fu.leads?.name || "Unknown"}{fu.leads?.company ? ` — ${fu.leads.company}` : ""}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground capitalize">{fu.meeting_type}</span>
-                          <span className="text-[10px] text-muted-foreground">·</span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />
-                            {fu.duration_minutes}m
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-primary mt-0.5">
-                          {formatDistanceToNow(new Date(fu.follow_up_date), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 shrink-0 text-primary hover:bg-primary/10"
-                    onClick={(e) => handleMarkComplete(e, fu.id)}
-                    disabled={updateFollowUp.isPending}
-                    title="Mark as completed"
-                  >
-                    <Check className="h-3 w-3" />
-                  </Button>
+                  {!n.read && <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs leading-snug ${!n.read ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                      {n.message}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>

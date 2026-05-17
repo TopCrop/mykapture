@@ -191,6 +191,8 @@ export type Database = {
       }
       leads: {
         Row: {
+          attention_to_name: string | null
+          attention_to_user_id: string | null
           bant_authority: string | null
           bant_budget: string | null
           bant_employees: string | null
@@ -222,6 +224,8 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          attention_to_name?: string | null
+          attention_to_user_id?: string | null
           bant_authority?: string | null
           bant_budget?: string | null
           bant_employees?: string | null
@@ -253,6 +257,8 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          attention_to_name?: string | null
+          attention_to_user_id?: string | null
           bant_authority?: string | null
           bant_budget?: string | null
           bant_employees?: string | null
@@ -310,6 +316,44 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string | null
+          message: string
+          read: boolean | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message: string
+          read?: boolean | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message?: string
+          read?: boolean | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
