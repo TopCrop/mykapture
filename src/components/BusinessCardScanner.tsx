@@ -179,6 +179,7 @@ function downloadPreview(dataUrl: string, contact?: { name?: string; company?: s
 }
 
 export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCardScannerProps) {
+  const { orgId } = useOrg();
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractedContact | null>(null);
