@@ -88,6 +88,46 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
   const [transcription, setTranscription] = useState("");
 
+  // Attention To (Quick mode only)
+  const [attentionToUserId, setAttentionToUserId] = useState<string | null>(null);
+  const [attentionToName, setAttentionToName] = useState("");
+  const [attentionQuery, setAttentionQuery] = useState("");
+  const [attentionDropdownOpen, setAttentionDropdownOpen] = useState(false);
+  const { data: allProfiles = [] } = useProfiles();
+  const orgMembers = useMemo(
+    () => allProfiles.filter((p) => p.org_id === orgId && p.user_id !== user?.id),
+    [allProfiles, orgId, user?.id]
+  );
+  const attentionMatches = useMemo(() => {
+    const raw = attentionQuery.replace(/^@/, "").trim().toLowerCase();
+    if (!raw) return orgMembers.slice(0, 6);
+    return orgMembers
+      .filter((p) => (p.display_name || "").toLowerCase().includes(raw))
+      .slice(0, 6);
+  }, [orgMembers, attentionQuery]);
+  const clearAttention = () => {
+    setAttentionToUserId(null);
+    setAttentionToName("");
+    setAttentionQuery("");
+  };
+  const selectAttentionMember = (member: { user_id: string; display_name: string | null }) => {
+    setAttentionToUserId(member.user_id);
+    setAttentionToName(member.display_name || "");
+    setAttentionQuery("");
+    setAttentionDropdownOpen(false);
+  };
+  const commitAttentionFreeText = () => {
+    const v = attentionQuery.replace(/^@/, "").trim();
+    if (v && !attentionToUserId) {
+      setAttentionToName(v);
+      setAttentionToUserId(null);
+      setAttentionQuery("");
+    }
+    setAttentionDropdownOpen(false);
+  };
+  const getInitials = (n: string) =>
+    n.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
+
   // Calendar booking
   const [followUpDate, setFollowUpDate] = useState<Date | undefined>();
   const [followUpTime, setFollowUpTime] = useState("10:00");
