@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions, useOrgFeatures } from "@/hooks/useData";
+import { useCreateLead, useEvents, useCreateFollowUpBooking, calculateLeadScore, useOrgSolutionOptions, useOrgFeatures, useProfiles } from "@/hooks/useData";
+import { X as XIcon } from "lucide-react";
 import { useOrg } from "@/hooks/useOrg";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
