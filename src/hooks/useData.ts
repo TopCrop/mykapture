@@ -26,19 +26,21 @@ type OrgFeaturesRow = Database["public"]["Tables"]["org_features"]["Row"];
 
 const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000, gcTime: 10 * 60 * 1000 } as const;
 
+type OrgFeaturesPatch = Partial<Pick<OrgFeaturesRow, "schedule_follow_up" | "linkedin_scanner_enabled">>;
+
 export function useOrgFeatures() {
   const { orgId } = useOrg();
   return useQuery({
     queryKey: ["org_features", orgId],
     queryFn: async () => {
-      if (!orgId) return { schedule_follow_up: false } as Pick<OrgFeaturesRow, "schedule_follow_up">;
+      if (!orgId) return { schedule_follow_up: false, linkedin_scanner_enabled: false } as Pick<OrgFeaturesRow, "schedule_follow_up" | "linkedin_scanner_enabled">;
       const { data, error } = await supabase
         .from("org_features")
-        .select("org_id,schedule_follow_up,updated_at")
+        .select("org_id,schedule_follow_up,linkedin_scanner_enabled,updated_at")
         .eq("org_id", orgId)
         .maybeSingle();
       if (error) throw error;
-      return data ?? { org_id: orgId, schedule_follow_up: false, updated_at: null };
+      return data ?? { org_id: orgId, schedule_follow_up: false, linkedin_scanner_enabled: false, updated_at: null };
     },
     enabled: true,
     ...CACHE_DEFAULTS,
@@ -50,7 +52,7 @@ export function useUpdateOrgFeatures() {
   const { user } = useAuth();
   const { orgId } = useOrg();
   return useMutation({
-    mutationFn: async (patch: Partial<Pick<OrgFeaturesRow, "schedule_follow_up">>) => {
+    mutationFn: async (patch: OrgFeaturesPatch) => {
       if (!orgId) throw new Error("No organization");
       const { data, error } = await supabase
         .from("org_features")
@@ -65,6 +67,43 @@ export function useUpdateOrgFeatures() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["org_features", orgId] });
+    },
+  });
+}
+
+export function useOrgProxycurlKey() {
+  const { orgId } = useOrg();
+  return useQuery({
+    queryKey: ["org_proxycurl_key", orgId],
+    queryFn: async () => {
+      if (!orgId) return { hasKey: false };
+      const { data, error } = await supabase
+        .from("organizations")
+        .select("proxycurl_api_key")
+        .eq("id", orgId)
+        .maybeSingle();
+      if (error) throw error;
+      return { hasKey: !!data?.proxycurl_api_key };
+    },
+    enabled: !!orgId,
+    ...CACHE_DEFAULTS,
+  });
+}
+
+export function useUpdateOrgProxycurlKey() {
+  const queryClient = useQueryClient();
+  const { orgId } = useOrg();
+  return useMutation({
+    mutationFn: async (key: string | null) => {
+      if (!orgId) throw new Error("No organization");
+      const { error } = await supabase
+        .from("organizations")
+        .update({ proxycurl_api_key: key })
+        .eq("id", orgId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["org_proxycurl_key", orgId] });
     },
   });
 }

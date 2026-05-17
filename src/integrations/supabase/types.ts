@@ -316,18 +316,21 @@ export type Database = {
       }
       org_features: {
         Row: {
+          linkedin_scanner_enabled: boolean
           org_id: string
           schedule_follow_up: boolean
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          linkedin_scanner_enabled?: boolean
           org_id: string
           schedule_follow_up?: boolean
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          linkedin_scanner_enabled?: boolean
           org_id?: string
           schedule_follow_up?: boolean
           updated_at?: string
@@ -412,6 +415,7 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          proxycurl_api_key: string | null
           status: string
           updated_at: string
         }
@@ -422,6 +426,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          proxycurl_api_key?: string | null
           status?: string
           updated_at?: string
         }
@@ -432,6 +437,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          proxycurl_api_key?: string | null
           status?: string
           updated_at?: string
         }

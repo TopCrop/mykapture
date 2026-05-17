@@ -6,6 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Camera, Upload, Loader2, Check, X, Video, CircleDot, WifiOff, QrCode, Download } from "lucide-react";
 import { toast } from "sonner";
 import jsQR from "jsqr";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrg } from "@/hooks/useOrg";
 
 interface ExtractedContact {
   name?: string;
@@ -177,6 +179,7 @@ function downloadPreview(dataUrl: string, contact?: { name?: string; company?: s
 }
 
 export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCardScannerProps) {
+  const { orgId } = useOrg();
   const [scanning, setScanning] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [result, setResult] = useState<ExtractedContact | null>(null);
@@ -281,17 +284,44 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     }
   }, [startQrScanLoop]);
 
-  const handleQrDetected = (data: string) => {
+  const handleQrDetected = async (data: string) => {
     const { contact, source } = parseQRContent(data);
     setQrSource(source);
 
     const hasFields = Object.values(contact).some(Boolean);
+
+    if (source === "LinkedIn") {
+      // Try Proxycurl enrichment first if org has it enabled.
+      if (orgId) {
+        try {
+          setScanStatus("Enriching LinkedIn profile...");
+          const { data: enrichRes, error } = await supabase.functions.invoke("enrich-linkedin", {
+            body: { linkedin_url: data, org_id: orgId },
+          });
+          setScanStatus(null);
+          if (!error && enrichRes?.enriched && enrichRes.contact) {
+            setResult(enrichRes.contact as ExtractedContact);
+            toast.success("LinkedIn profile enriched automatically");
+            return;
+          }
+        } catch (err) {
+          console.warn("LinkedIn enrichment failed:", err);
+          setScanStatus(null);
+        }
+      }
+      // Fallback: pre-fill website + manual mode
+      setManualContact(contact);
+      setManualMode(true);
+      toast.success("LinkedIn link detected — complete the remaining details.");
+      return;
+    }
+
     if (hasFields) {
       if (source === "vCard" || source === "MECARD") {
         setResult(contact);
         toast.success(`QR code decoded (${source}) — contact info extracted!`);
       } else {
-        // URL-based (LinkedIn, Lusha, etc.): pre-fill manual form
+        // URL-based (Lusha, etc.): pre-fill manual form
         setManualContact(contact);
         setManualMode(true);
         toast.success(`${source} link detected! Complete the remaining details.`);
