@@ -429,6 +429,7 @@ const Index = () => {
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Classification</th>
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Score</th>
                     {(isAdmin || isManager) && <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Captured By</th>}
+                    <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Attention To</th>
                     <th className="px-5 py-2.5 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Sync</th>
                   </tr>
                 </thead>
