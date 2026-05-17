@@ -284,17 +284,44 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     }
   }, [startQrScanLoop]);
 
-  const handleQrDetected = (data: string) => {
+  const handleQrDetected = async (data: string) => {
     const { contact, source } = parseQRContent(data);
     setQrSource(source);
 
     const hasFields = Object.values(contact).some(Boolean);
+
+    if (source === "LinkedIn") {
+      // Try Proxycurl enrichment first if org has it enabled.
+      if (orgId) {
+        try {
+          setScanStatus("Enriching LinkedIn profile...");
+          const { data: enrichRes, error } = await supabase.functions.invoke("enrich-linkedin", {
+            body: { linkedin_url: data, org_id: orgId },
+          });
+          setScanStatus(null);
+          if (!error && enrichRes?.enriched && enrichRes.contact) {
+            setResult(enrichRes.contact as ExtractedContact);
+            toast.success("LinkedIn profile enriched automatically");
+            return;
+          }
+        } catch (err) {
+          console.warn("LinkedIn enrichment failed:", err);
+          setScanStatus(null);
+        }
+      }
+      // Fallback: pre-fill website + manual mode
+      setManualContact(contact);
+      setManualMode(true);
+      toast.success("LinkedIn link detected — complete the remaining details.");
+      return;
+    }
+
     if (hasFields) {
       if (source === "vCard" || source === "MECARD") {
         setResult(contact);
         toast.success(`QR code decoded (${source}) — contact info extracted!`);
       } else {
-        // URL-based (LinkedIn, Lusha, etc.): pre-fill manual form
+        // URL-based (Lusha, etc.): pre-fill manual form
         setManualContact(contact);
         setManualMode(true);
         toast.success(`${source} link detected! Complete the remaining details.`);
