@@ -286,7 +286,9 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       captured_by: user.id,
       is_duplicate: duplicateInfo?.is_duplicate ? true : false,
       duplicate_of: duplicateInfo?.is_duplicate ? (duplicateInfo.lead_id ?? null) : null,
-    };
+      attention_to_user_id: isQuickMode ? attentionToUserId : null,
+      attention_to_name: isQuickMode ? (attentionToName || null) : null,
+    } as any;
 
     if (!navigator.onLine) {
       queueLeadOffline(leadData);
@@ -310,6 +312,18 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
           follow_up_date: bookingDate.toISOString(),
           duration_minutes: parseInt(followUpDuration),
           meeting_type: meetingType,
+        });
+      }
+
+      // Notify tagged rep
+      if (isQuickMode && attentionToUserId && created) {
+        const captureName = user.user_metadata?.full_name || user.email || "A teammate";
+        const leadLabel = `${name}${company ? ` (${company})` : ""}`;
+        await supabase.from("notifications" as any).insert({
+          user_id: attentionToUserId,
+          type: "attention",
+          lead_id: created.id,
+          message: `${captureName} tagged you on a lead: ${leadLabel}`,
         });
       }
 
