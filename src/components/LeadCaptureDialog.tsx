@@ -286,8 +286,8 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       captured_by: user.id,
       is_duplicate: duplicateInfo?.is_duplicate ? true : false,
       duplicate_of: duplicateInfo?.is_duplicate ? (duplicateInfo.lead_id ?? null) : null,
-      attention_to_user_id: isQuickMode ? attentionToUserId : null,
-      attention_to_name: isQuickMode ? (attentionToName || null) : null,
+      attention_to_user_id: attentionToUserId,
+      attention_to_name: attentionToName || null,
     } as any;
 
     if (!navigator.onLine) {
