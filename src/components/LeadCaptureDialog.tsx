@@ -316,7 +316,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       }
 
       // Notify tagged rep
-      if (isQuickMode && attentionToUserId && created) {
+      if (attentionToUserId && created) {
         const captureName = user.user_metadata?.full_name || user.email || "A teammate";
         const leadLabel = `${name}${company ? ` (${company})` : ""}`;
         await supabase.from("notifications" as any).insert({
