@@ -65,7 +65,7 @@ function OfflineSyncInit() {
 
 const App = () => (
   <ErrorBoundary>
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
     <TooltipProvider>
       <Toaster />
       <Sonner duration={3000} closeButton={true} visibleToasts={3} position="top-center" richColors style={{ zIndex: 9999 }} />
@@ -94,7 +94,7 @@ const App = () => (
         </OrgProvider>
       </AuthProvider>
     </TooltipProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
   </ErrorBoundary>
 );
 
