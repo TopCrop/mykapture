@@ -15,6 +15,15 @@ type QueuedLead = LeadInsert & { id: string; org_id: string; _queuedAt?: string;
 let isSyncing = false;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
+export const QUEUE_EVENT = "kapture:queue-changed";
+function emitQueueChanged() {
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(QUEUE_EVENT));
+    }
+  } catch {}
+}
+
 // ── Lead queue (localStorage, small payloads) ──
 
 export function queueLeadOffline(
@@ -36,6 +45,7 @@ export function queueLeadOffline(
     _userId: opts.userId,
   } as QueuedLead);
   localStorage.setItem(key, JSON.stringify(queue));
+  emitQueueChanged();
 }
 
 function readQueue(key: string): QueuedLead[] {
@@ -54,6 +64,49 @@ export function getOfflineQueue(userId?: string): QueuedLead[] {
 export function clearOfflineQueue(userId?: string) {
   if (userId) localStorage.removeItem(queueKeyFor(userId));
   else localStorage.removeItem(LEGACY_QUEUE_KEY);
+  emitQueueChanged();
+}
+
+export function getQueuedLeadsCount(userId: string): number {
+  return readQueue(queueKeyFor(userId)).length + readQueue(LEGACY_QUEUE_KEY).length;
+}
+
+export interface FailedLead {
+  id: string;
+  name?: string | null;
+  company?: string | null;
+  _error?: string;
+  _failedAt?: string;
+  [k: string]: any;
+}
+
+export function getFailedLeads(userId: string): FailedLead[] {
+  return readQueue(failedKeyFor(userId)) as any;
+}
+
+export function retryFailedLead(userId: string, id: string) {
+  const failedKey = failedKeyFor(userId);
+  const failed = readQueue(failedKey) as any[];
+  const idx = failed.findIndex((l) => l.id === id);
+  if (idx < 0) return;
+  const [item] = failed.splice(idx, 1);
+  delete item._error;
+  delete item._failedAt;
+  const activeKey = queueKeyFor(userId);
+  const active = readQueue(activeKey);
+  active.push(item);
+  localStorage.setItem(activeKey, JSON.stringify(active));
+  if (failed.length) localStorage.setItem(failedKey, JSON.stringify(failed));
+  else localStorage.removeItem(failedKey);
+  emitQueueChanged();
+}
+
+export function discardFailedLead(userId: string, id: string) {
+  const failedKey = failedKeyFor(userId);
+  const failed = (readQueue(failedKey) as any[]).filter((l) => l.id !== id);
+  if (failed.length) localStorage.setItem(failedKey, JSON.stringify(failed));
+  else localStorage.removeItem(failedKey);
+  emitQueueChanged();
 }
 
 function isUniqueViolation(err: any) {
@@ -128,6 +181,7 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
     return { synced, failed: failed + permanentFailures };
   } finally {
     isSyncing = false;
+    emitQueueChanged();
   }
 }
 
