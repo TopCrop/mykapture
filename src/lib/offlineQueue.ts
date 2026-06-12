@@ -45,6 +45,7 @@ export function queueLeadOffline(
     _userId: opts.userId,
   } as QueuedLead);
   localStorage.setItem(key, JSON.stringify(queue));
+  emitQueueChanged();
 }
 
 function readQueue(key: string): QueuedLead[] {
