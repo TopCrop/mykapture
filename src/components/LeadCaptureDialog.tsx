@@ -87,6 +87,11 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [classOverride, setClassOverride] = useState<LeadClassification | "">("");
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
   const [transcription, setTranscription] = useState("");
+  const newLeadId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const [leadClientId, setLeadClientId] = useState<string>(() => newLeadId());
 
   // Attention To (Quick mode only)
   const [attentionToUserId, setAttentionToUserId] = useState<string | null>(null);
@@ -227,7 +232,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
     setDuplicateInfo(null);
-    setVoiceNoteUrl(""); setTranscription("");
+    setVoiceNoteUrl(""); setTranscription(""); setLeadClientId(newLeadId());
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
     setMeetingType("call"); setBookFollowUp(false); setNameAttempted(false);
     setShowEventWarning(false);
@@ -265,6 +270,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     if (!user) return;
     const finalClassification = classOverride || scoring.classification;
     const leadData = {
+      id: leadClientId,
       name,
       title: title || null,
       company: company || null,
@@ -279,7 +285,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       bant_employees: employees || null,
       event_id: eventId || null,
       notes: notes || null,
-      voice_note_url: voiceNoteUrl || null,
+      voice_note_url: voiceNoteUrl && voiceNoteUrl !== "offline-pending" ? voiceNoteUrl : null,
       transcription: transcription || null,
       score: scoring.score,
       classification: finalClassification,
@@ -579,7 +585,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note (optional)</Label>
-                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} leadClientId={leadClientId} />
                 {transcription && (
                   <div className="p-2 rounded bg-muted/50 border text-xs text-muted-foreground mt-1">
                     <strong>Transcription:</strong> {transcription.slice(0, 150)}{transcription.length > 150 ? "…" : ""}
@@ -737,7 +743,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note</Label>
-                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} leadClientId={leadClientId} />
                 {transcription && (
                   <div className="p-2 rounded bg-muted/50 border text-xs text-muted-foreground mt-1">
                     <strong>Transcription:</strong> {transcription.slice(0, 200)}{transcription.length > 200 ? "…" : ""}
@@ -978,7 +984,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                     <Mic className="h-3.5 w-3.5 text-muted-foreground" />
                     Add Voice Note (optional)
                   </Label>
-                  <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                  <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} leadClientId={leadClientId} />
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">

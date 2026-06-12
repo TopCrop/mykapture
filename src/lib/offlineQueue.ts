@@ -5,7 +5,7 @@ import { toast } from "sonner";
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 
 const LEGACY_QUEUE_KEY = "kapture_offline_leads";
-const VOICE_QUEUE_KEY = "kapture_offline_voice_notes";
+const LEGACY_VOICE_QUEUE_KEY = "kapture_offline_voice_notes";
 
 const queueKeyFor = (userId: string) => `kapture_offline_leads_${userId}`;
 const failedKeyFor = (userId: string) => `kapture_failed_leads_${userId}`;
@@ -15,7 +15,7 @@ type QueuedLead = LeadInsert & { id: string; org_id: string; _queuedAt?: string;
 let isSyncing = false;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-// ── Lead queue ──
+// ── Lead queue (localStorage, small payloads) ──
 
 export function queueLeadOffline(
   lead: LeadInsert,
@@ -48,7 +48,6 @@ function readQueue(key: string): QueuedLead[] {
 
 export function getOfflineQueue(userId?: string): QueuedLead[] {
   if (userId) return readQueue(queueKeyFor(userId));
-  // legacy fallback (pre-scoped)
   return readQueue(LEGACY_QUEUE_KEY);
 }
 
@@ -79,7 +78,6 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
     const userId = session.user.id;
     const key = queueKeyFor(userId);
 
-    // Migrate any legacy queue items (un-scoped) to this user's queue
     const legacy = readQueue(LEGACY_QUEUE_KEY);
     if (legacy.length > 0) {
       const existing = readQueue(key);
@@ -103,7 +101,6 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
       if (!error) {
         synced++;
       } else if (isUniqueViolation(error)) {
-        // Already synced previously — treat as success
         synced++;
       } else if (isRlsError(error)) {
         permanentFailures++;
@@ -134,74 +131,183 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
   }
 }
 
-// ── Voice note offline queue ── (unchanged)
+// ── Voice note offline queue (IndexedDB, stores Blobs) ──
 
-interface OfflineVoiceNote {
-  base64: string;
+const IDB_NAME = "kapture_offline";
+const IDB_VERSION = 1;
+const IDB_STORE = "voice_notes";
+
+export interface QueuedVoiceNote {
+  id: string;
+  leadClientId: string;
   userId: string;
-  timestamp: string;
+  blob: Blob;
+  createdAt: string;
 }
 
-function blobToBase64(blob: Blob): Promise<string> {
+function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
+    const req = indexedDB.open(IDB_NAME, IDB_VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(IDB_STORE)) {
+        db.createObjectStore(IDB_STORE, { keyPath: "id" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
   });
 }
 
-function base64ToBlob(dataUrl: string): Blob {
-  const [header, data] = dataUrl.split(",");
-  const mime = header.match(/:(.*?);/)?.[1] || "audio/webm";
-  const binary = atob(data);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return new Blob([bytes], { type: mime });
+function idbReq<T>(req: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-function getOfflineVoiceNotes(): OfflineVoiceNote[] {
+export async function queueVoiceNoteOffline(
+  blob: Blob,
+  userId: string,
+  leadClientId: string
+): Promise<string> {
+  const db = await openDB();
+  const id =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const record: QueuedVoiceNote = {
+    id,
+    leadClientId,
+    userId,
+    blob,
+    createdAt: new Date().toISOString(),
+  };
+  const tx = db.transaction(IDB_STORE, "readwrite");
+  tx.objectStore(IDB_STORE).put(record);
+  await new Promise<void>((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+  db.close();
+  // Best-effort: clear any legacy localStorage queue to free space
+  try { localStorage.removeItem(LEGACY_VOICE_QUEUE_KEY); } catch {}
+  return id;
+}
+
+async function getAllVoiceNotes(): Promise<QueuedVoiceNote[]> {
   try {
-    return JSON.parse(localStorage.getItem(VOICE_QUEUE_KEY) || "[]");
+    const db = await openDB();
+    const tx = db.transaction(IDB_STORE, "readonly");
+    const all = await idbReq(tx.objectStore(IDB_STORE).getAll() as IDBRequest<QueuedVoiceNote[]>);
+    db.close();
+    return all || [];
   } catch {
     return [];
   }
 }
 
-export async function queueVoiceNoteOffline(blob: Blob, userId: string) {
-  const notes = getOfflineVoiceNotes();
-  const base64 = await blobToBase64(blob);
-  notes.push({ base64, userId, timestamp: new Date().toISOString() });
-  localStorage.setItem(VOICE_QUEUE_KEY, JSON.stringify(notes));
+async function deleteVoiceNote(id: string): Promise<void> {
+  const db = await openDB();
+  const tx = db.transaction(IDB_STORE, "readwrite");
+  tx.objectStore(IDB_STORE).delete(id);
+  await new Promise<void>((resolve) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+    tx.onabort = () => resolve();
+  });
+  db.close();
+}
+
+function blobToBase64Async(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
 }
 
 export async function syncOfflineVoiceNotes(): Promise<{ synced: number; failed: number }> {
-  const notes = getOfflineVoiceNotes();
+  const notes = await getAllVoiceNotes();
   if (notes.length === 0) return { synced: 0, failed: 0 };
 
   let synced = 0;
   let failed = 0;
-  const remaining: OfflineVoiceNote[] = [];
 
   for (const note of notes) {
     try {
-      const blob = base64ToBlob(note.base64);
-      const fileName = `${note.userId}/${Date.now()}-${synced}.webm`;
-      const { error } = await supabase.storage
+      // Verify the lead row exists; if not, skip and retry next pass.
+      const { data: leadRow, error: leadErr } = await supabase
+        .from("leads")
+        .select("id")
+        .eq("id", note.leadClientId)
+        .maybeSingle();
+      if (leadErr || !leadRow) {
+        failed++;
+        continue;
+      }
+
+      const fileName = `${note.userId}/${note.leadClientId}.webm`;
+      const { error: upErr } = await supabase.storage
         .from("voice-notes")
-        .upload(fileName, blob, { contentType: "audio/webm" });
-      if (error) throw error;
+        .upload(fileName, note.blob, { contentType: "audio/webm", upsert: true });
+      if (upErr) {
+        failed++;
+        continue;
+      }
+
+      const { data: signed } = await supabase.storage
+        .from("voice-notes")
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365);
+      const signedUrl = signed?.signedUrl || fileName;
+
+      const { error: updErr } = await supabase
+        .from("leads")
+        .update({ voice_note_url: signedUrl } as any)
+        .eq("id", note.leadClientId);
+      if (updErr) {
+        failed++;
+        continue;
+      }
+
+      // Transcribe (best-effort — don't block deletion if it fails)
+      try {
+        const audioBase64 = await blobToBase64Async(note.blob);
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-voice`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({ audioBase64, format: "webm" }),
+          }
+        );
+        if (response.ok) {
+          const result = await response.json();
+          if (result?.transcription) {
+            await supabase
+              .from("leads")
+              .update({ transcription: result.transcription } as any)
+              .eq("id", note.leadClientId);
+          }
+        }
+      } catch {
+        // ignore — voice_note_url already saved; transcription can be retried manually
+      }
+
+      await deleteVoiceNote(note.id);
       synced++;
     } catch {
       failed++;
-      remaining.push(note);
     }
-  }
-
-  if (remaining.length > 0) {
-    localStorage.setItem(VOICE_QUEUE_KEY, JSON.stringify(remaining));
-  } else {
-    localStorage.removeItem(VOICE_QUEUE_KEY);
   }
 
   return { synced, failed };
@@ -224,16 +330,17 @@ function hasAnyQueuedLeads(): boolean {
 
 export function initOfflineSync(onSync?: (result: { synced: number; failed: number }) => void) {
   const run = async () => {
-    const voiceResult = await syncOfflineVoiceNotes();
+    // Leads MUST sync first so voice notes can attach to existing lead rows
     const leadResult = await syncOfflineQueue();
+    const voiceResult = await syncOfflineVoiceNotes();
     const combined = {
       synced: leadResult.synced + voiceResult.synced,
       failed: leadResult.failed + voiceResult.failed,
     };
     if (combined.synced > 0 || combined.failed > 0) onSync?.(combined);
 
-    // Manage polling based on remaining queue
-    if (hasAnyQueuedLeads()) {
+    const voiceRemaining = (await getAllVoiceNotes()).length > 0;
+    if (hasAnyQueuedLeads() || voiceRemaining) {
       if (!pollInterval) {
         pollInterval = setInterval(run, 60_000);
       }
