@@ -285,7 +285,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       bant_employees: employees || null,
       event_id: eventId || null,
       notes: notes || null,
-      voice_note_url: voiceNoteUrl || null,
+      voice_note_url: voiceNoteUrl && voiceNoteUrl !== "offline-pending" ? voiceNoteUrl : null,
       transcription: transcription || null,
       score: scoring.score,
       classification: finalClassification,
