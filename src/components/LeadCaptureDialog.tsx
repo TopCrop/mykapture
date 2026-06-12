@@ -1008,7 +1008,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Back</Button>
                 <Button className="flex-1" onClick={handleSubmit} disabled={createLead.isPending}>
                   {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {!navigator.onLine ? "Save Offline" : "Capture Lead"}
+                  {createLead.isPending ? "Saving…" : !navigator.onLine ? "Save Offline" : "Capture Lead"}
                 </Button>
               </div>
             </div>
