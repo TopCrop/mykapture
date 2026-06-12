@@ -34,6 +34,20 @@ const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 
 const queryClient = new QueryClient();
 
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: "kapture_query_cache",
+});
+
+const persistOptions = {
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  buster: "kapture-v1",
+  dehydrateOptions: {
+    shouldDehydrateMutation: () => false,
+  },
+};
+
+
 function OfflineSyncInit() {
   useEffect(() => {
     return initOfflineSync((result) => {
