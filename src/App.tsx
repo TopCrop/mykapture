@@ -1,8 +1,11 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import { AuthProvider } from "@/hooks/useAuth";
 import { OrgProvider } from "@/hooks/useOrg";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -31,6 +34,21 @@ const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 
 const queryClient = new QueryClient();
 
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: "kapture_query_cache",
+});
+
+const persistOptions = {
+  persister,
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  buster: "kapture-v1",
+  dehydrateOptions: {
+    shouldDehydrateMutation: () => false,
+  },
+};
+
+
 function OfflineSyncInit() {
   useEffect(() => {
     return initOfflineSync((result) => {
@@ -48,7 +66,7 @@ function OfflineSyncInit() {
 
 const App = () => (
   <ErrorBoundary>
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
     <TooltipProvider>
       <Toaster />
       <Sonner duration={3000} closeButton={true} visibleToasts={3} position="top-center" richColors style={{ zIndex: 9999 }} />
@@ -77,7 +95,7 @@ const App = () => (
         </OrgProvider>
       </AuthProvider>
     </TooltipProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
   </ErrorBoundary>
 );
 
