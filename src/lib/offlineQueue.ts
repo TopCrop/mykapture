@@ -4,76 +4,137 @@ import { toast } from "sonner";
 
 type LeadInsert = Database["public"]["Tables"]["leads"]["Insert"];
 
-const QUEUE_KEY = "kapture_offline_leads";
+const LEGACY_QUEUE_KEY = "kapture_offline_leads";
 const VOICE_QUEUE_KEY = "kapture_offline_voice_notes";
+
+const queueKeyFor = (userId: string) => `kapture_offline_leads_${userId}`;
+const failedKeyFor = (userId: string) => `kapture_failed_leads_${userId}`;
+
+type QueuedLead = LeadInsert & { id: string; org_id: string; _queuedAt?: string; _userId?: string };
+
+let isSyncing = false;
+let pollInterval: ReturnType<typeof setInterval> | null = null;
 
 // ── Lead queue ──
 
-export function queueLeadOffline(lead: LeadInsert) {
-  const queue = getOfflineQueue();
-  queue.push({ ...lead, _queuedAt: new Date().toISOString() });
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+export function queueLeadOffline(
+  lead: LeadInsert,
+  opts: { orgId: string; userId: string }
+) {
+  const key = queueKeyFor(opts.userId);
+  const queue = readQueue(key);
+  const id =
+    (lead as any).id ||
+    (typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  queue.push({
+    ...lead,
+    id,
+    org_id: opts.orgId,
+    _queuedAt: new Date().toISOString(),
+    _userId: opts.userId,
+  } as QueuedLead);
+  localStorage.setItem(key, JSON.stringify(queue));
 }
 
-export function getOfflineQueue(): (LeadInsert & { _queuedAt?: string })[] {
+function readQueue(key: string): QueuedLead[] {
   try {
-    return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+    return JSON.parse(localStorage.getItem(key) || "[]");
   } catch {
     return [];
   }
 }
 
-export function clearOfflineQueue() {
-  localStorage.removeItem(QUEUE_KEY);
+export function getOfflineQueue(userId?: string): QueuedLead[] {
+  if (userId) return readQueue(queueKeyFor(userId));
+  // legacy fallback (pre-scoped)
+  return readQueue(LEGACY_QUEUE_KEY);
+}
+
+export function clearOfflineQueue(userId?: string) {
+  if (userId) localStorage.removeItem(queueKeyFor(userId));
+  else localStorage.removeItem(LEGACY_QUEUE_KEY);
+}
+
+function isUniqueViolation(err: any) {
+  return err?.code === "23505";
+}
+function isRlsError(err: any) {
+  return (
+    err?.code === "42501" ||
+    (typeof err?.message === "string" &&
+      err.message.toLowerCase().includes("row-level security"))
+  );
 }
 
 export async function syncOfflineQueue(): Promise<{ synced: number; failed: number }> {
-  const queue = getOfflineQueue();
-  const queuedLeads = queue.map(({ _queuedAt, ...lead }) => lead);
+  if (isSyncing) return { synced: 0, failed: 0 };
+  isSyncing = true;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData?.session;
+    if (!session) return { synced: 0, failed: 0 };
 
-  if (queuedLeads.length === 0) return { synced: 0, failed: 0 };
+    const userId = session.user.id;
+    const key = queueKeyFor(userId);
 
-  // Try batch insert first
-  const { data, error } = await supabase
-    .from("leads")
-    .insert(queuedLeads)
-    .select();
-
-  if (!error) {
-    clearOfflineQueue();
-    const count = data?.length || queuedLeads.length;
-    toast.success(`${count} offline lead${count !== 1 ? "s" : ""} synced successfully`);
-    return { synced: count, failed: 0 };
-  }
-
-  // Batch failed — fall back to individual inserts to identify which ones fail
-  let synced = 0;
-  let failed = 0;
-  const remaining: typeof queue = [];
-
-  for (let i = 0; i < queuedLeads.length; i++) {
-    const { error: singleError } = await supabase.from("leads").insert(queuedLeads[i]);
-    if (singleError) {
-      failed++;
-      remaining.push(queue[i]);
-    } else {
-      synced++;
+    // Migrate any legacy queue items (un-scoped) to this user's queue
+    const legacy = readQueue(LEGACY_QUEUE_KEY);
+    if (legacy.length > 0) {
+      const existing = readQueue(key);
+      localStorage.setItem(key, JSON.stringify([...existing, ...legacy]));
+      localStorage.removeItem(LEGACY_QUEUE_KEY);
     }
+
+    const queue = readQueue(key);
+    if (queue.length === 0) return { synced: 0, failed: 0 };
+
+    let synced = 0;
+    let failed = 0;
+    let permanentFailures = 0;
+    const remaining: QueuedLead[] = [];
+    const failedKey = failedKeyFor(userId);
+    const failedStore: any[] = readQueue(failedKey) as any;
+
+    for (const item of queue) {
+      const { _queuedAt, _userId, ...payload } = item;
+      const { error } = await supabase.from("leads").insert(payload as any);
+      if (!error) {
+        synced++;
+      } else if (isUniqueViolation(error)) {
+        // Already synced previously — treat as success
+        synced++;
+      } else if (isRlsError(error)) {
+        permanentFailures++;
+        failedStore.push({ ...item, _error: error.message, _failedAt: new Date().toISOString() });
+      } else {
+        failed++;
+        remaining.push(item);
+      }
+    }
+
+    if (remaining.length > 0) {
+      localStorage.setItem(key, JSON.stringify(remaining));
+    } else {
+      localStorage.removeItem(key);
+    }
+    if (permanentFailures > 0) {
+      localStorage.setItem(failedKey, JSON.stringify(failedStore));
+      toast.error(
+        `${permanentFailures} lead${permanentFailures !== 1 ? "s" : ""} couldn't sync (event may be closed). Check Leads > Pending.`
+      );
+    }
+    if (synced > 0) toast.success(`${synced} offline lead${synced !== 1 ? "s" : ""} synced`);
+    if (failed > 0) toast.warning(`${failed} lead${failed !== 1 ? "s" : ""} couldn't sync — will retry on next reconnect`);
+
+    return { synced, failed: failed + permanentFailures };
+  } finally {
+    isSyncing = false;
   }
-
-  if (remaining.length > 0) {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(remaining));
-  } else {
-    clearOfflineQueue();
-  }
-
-  if (synced > 0) toast.success(`${synced} offline lead${synced !== 1 ? "s" : ""} synced`);
-  if (failed > 0) toast.warning(`${failed} lead${failed !== 1 ? "s" : ""} couldn't sync — will retry on next reconnect`);
-
-  return { synced, failed };
 }
 
-// ── Voice note offline queue ──
+// ── Voice note offline queue ── (unchanged)
 
 interface OfflineVoiceNote {
   base64: string;
@@ -95,9 +156,7 @@ function base64ToBlob(dataUrl: string): Blob {
   const mime = header.match(/:(.*?);/)?.[1] || "audio/webm";
   const binary = atob(data);
   const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return new Blob([bytes], { type: mime });
 }
 
@@ -148,29 +207,59 @@ export async function syncOfflineVoiceNotes(): Promise<{ synced: number; failed:
   return { synced, failed };
 }
 
-// ── Auto-sync when coming back online ──
+// ── Auto-sync triggers ──
+
+function hasAnyQueuedLeads(): boolean {
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k) continue;
+    if (k === LEGACY_QUEUE_KEY || k.startsWith("kapture_offline_leads_")) {
+      try {
+        if ((JSON.parse(localStorage.getItem(k) || "[]") as any[]).length > 0) return true;
+      } catch {}
+    }
+  }
+  return false;
+}
 
 export function initOfflineSync(onSync?: (result: { synced: number; failed: number }) => void) {
-  const handler = async () => {
-    const queue = getOfflineQueue();
-    const voiceNotes = getOfflineVoiceNotes();
-
-    if (queue.length === 0 && voiceNotes.length === 0) return;
-
-    // Sync voice notes first (they don't depend on leads)
+  const run = async () => {
     const voiceResult = await syncOfflineVoiceNotes();
-
-    // Then sync leads
     const leadResult = await syncOfflineQueue();
-
     const combined = {
       synced: leadResult.synced + voiceResult.synced,
       failed: leadResult.failed + voiceResult.failed,
     };
+    if (combined.synced > 0 || combined.failed > 0) onSync?.(combined);
 
-    onSync?.(combined);
+    // Manage polling based on remaining queue
+    if (hasAnyQueuedLeads()) {
+      if (!pollInterval) {
+        pollInterval = setInterval(run, 60_000);
+      }
+    } else if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
   };
 
-  window.addEventListener("online", handler);
-  return () => window.removeEventListener("online", handler);
+  const onOnline = () => run();
+  const onVisibility = () => {
+    if (document.visibilityState === "visible") run();
+  };
+
+  window.addEventListener("online", onOnline);
+  document.addEventListener("visibilitychange", onVisibility);
+
+  const startupTimer = setTimeout(run, 3000);
+
+  return () => {
+    window.removeEventListener("online", onOnline);
+    document.removeEventListener("visibilitychange", onVisibility);
+    clearTimeout(startupTimer);
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  };
 }
