@@ -87,6 +87,11 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
   const [classOverride, setClassOverride] = useState<LeadClassification | "">("");
   const [voiceNoteUrl, setVoiceNoteUrl] = useState("");
   const [transcription, setTranscription] = useState("");
+  const newLeadId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const [leadClientId, setLeadClientId] = useState<string>(() => newLeadId());
 
   // Attention To (Quick mode only)
   const [attentionToUserId, setAttentionToUserId] = useState<string | null>(null);
