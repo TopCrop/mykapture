@@ -15,6 +15,15 @@ type QueuedLead = LeadInsert & { id: string; org_id: string; _queuedAt?: string;
 let isSyncing = false;
 let pollInterval: ReturnType<typeof setInterval> | null = null;
 
+export const QUEUE_EVENT = "kapture:queue-changed";
+function emitQueueChanged() {
+  try {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent(QUEUE_EVENT));
+    }
+  } catch {}
+}
+
 // ── Lead queue (localStorage, small payloads) ──
 
 export function queueLeadOffline(
