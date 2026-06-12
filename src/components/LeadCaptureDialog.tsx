@@ -232,7 +232,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     setBudget(""); setAuthority(""); setNeeds([]); setTimeline(""); setEmployees("");
     setEventId(""); setNotes(""); setClassOverride("");
     setDuplicateInfo(null);
-    setVoiceNoteUrl(""); setTranscription("");
+    setVoiceNoteUrl(""); setTranscription(""); setLeadClientId(newLeadId());
     setFollowUpDate(undefined); setFollowUpTime("10:00"); setFollowUpDuration("30");
     setMeetingType("call"); setBookFollowUp(false); setNameAttempted(false);
     setShowEventWarning(false);
