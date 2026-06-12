@@ -181,6 +181,7 @@ export async function syncOfflineQueue(): Promise<{ synced: number; failed: numb
     return { synced, failed: failed + permanentFailures };
   } finally {
     isSyncing = false;
+    emitQueueChanged();
   }
 }
 
