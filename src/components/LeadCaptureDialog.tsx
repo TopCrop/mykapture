@@ -610,7 +610,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 }
               }} disabled={!name.trim() || createLead.isPending}>
                 {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                {!navigator.onLine ? "Save Offline" : "Capture Lead"}
+                {createLead.isPending ? "Saving…" : !navigator.onLine ? "Save Offline" : "Capture Lead"}
               </Button>
 
               <p className="text-[10px] text-muted-foreground text-center">
