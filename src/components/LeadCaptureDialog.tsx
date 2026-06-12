@@ -291,7 +291,11 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     } as any;
 
     if (!navigator.onLine) {
-      queueLeadOffline(leadData);
+      if (!orgId || !user?.id) {
+        toast.error("Cannot save offline without an organization context.");
+        return;
+      }
+      queueLeadOffline(leadData, { orgId, userId: user.id });
       toast.success("Lead saved offline! Will sync when connected.");
       resetForm();
       onClose();
