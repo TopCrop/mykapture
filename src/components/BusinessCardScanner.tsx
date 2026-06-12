@@ -189,13 +189,30 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const [qrMode, setQrMode] = useState(false);
   const [qrSource, setQrSource] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<string | null>(null);
-  
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+  useEffect(() => {
+    const update = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrFileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const qrAnimFrameRef = useRef<number | null>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const autoSaveIfEnabled = (dataUrl: string, contact?: ExtractedContact | null) => {
+    if (localStorage.getItem("kapture.autoSaveCards") !== "false") {
+      downloadPreview(dataUrl, contact ?? null);
+    }
+  };
 
   const stopCamera = useCallback(() => {
     if (qrAnimFrameRef.current) {
@@ -386,20 +403,18 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
     processBase64(resized);
   }, [stopCamera]);
 
-  const enterManualMode = () => {
+  const enterManualMode = (message: string) => {
     setManualMode(true);
     setScanning(false);
     setResult(null);
-    toast("You're offline — card scanned but OCR unavailable. Please fill in details manually.", { icon: <WifiOff className="h-4 w-4" /> });
+    toast.warning(message, { icon: <WifiOff className="h-4 w-4" /> });
   };
 
   const processBase64 = async (dataUrl: string) => {
     if (!navigator.onLine) {
-      toast("You're offline — card saved as image. Fill in details manually and submit.", {
-        icon: <WifiOff className="h-4 w-4" />,
-      });
-      onExtracted({});
-      handleClose();
+      // Keep the photo preview so the rep can copy details from it on screen.
+      autoSaveIfEnabled(dataUrl, null);
+      enterManualMode("No connection — card photo saved to device. Please enter the lead details manually.");
       return;
     }
 
@@ -441,16 +456,16 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       setScanStatus(null);
       toast.success("Business card scanned successfully!");
       // Auto-save scanned card to device (user-controllable in Profile settings)
-      if (localStorage.getItem("kapture.autoSaveCards") !== "false") {
-        downloadPreview(dataUrl, data.contact);
-      }
+      autoSaveIfEnabled(dataUrl, data.contact);
     } catch (error: any) {
       console.error("Scanner error:", error);
       setScanStatus(null);
-      if (error instanceof TypeError || error.name === "TypeError") {
-        enterManualMode();
-      } else if (error.name === "AbortError") {
-        toast.error("Scan timed out. Try a clearer photo or upload from gallery.");
+      const isNetworkErr = error instanceof TypeError || error.name === "TypeError";
+      const isTimeout = error.name === "AbortError";
+      if (isNetworkErr || isTimeout) {
+        // Keep preview visible so rep can read details from the photo while entering manually.
+        autoSaveIfEnabled(dataUrl, null);
+        enterManualMode("Connection too slow for AI scanning — please enter details manually.");
       } else {
         toast.error(error.message || "Failed to scan business card");
       }
@@ -458,6 +473,7 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
       setScanning(false);
     }
   };
+
 
   const processImage = async (file: File) => {
     try {
@@ -530,6 +546,15 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
         </DialogHeader>
 
         <div className="space-y-4">
+          {!isOnline && !qrMode && (
+            <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+              <WifiOff className="h-4 w-4 mt-0.5 text-warning shrink-0" />
+              <span>
+                No connection — AI card scanning is unavailable. You can photograph the card for your records and enter details manually.
+              </span>
+            </div>
+          )}
+
           {/* Camera viewfinder */}
           {cameraActive && (
             <div className="relative rounded-lg overflow-hidden border bg-black">
