@@ -584,7 +584,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note (optional)</Label>
-                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} leadClientId={leadClientId} />
                 {transcription && (
                   <div className="p-2 rounded bg-muted/50 border text-xs text-muted-foreground mt-1">
                     <strong>Transcription:</strong> {transcription.slice(0, 150)}{transcription.length > 150 ? "…" : ""}
@@ -742,7 +742,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
 
               <div className="space-y-1.5">
                 <Label className="text-xs">Voice Note</Label>
-                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} leadClientId={leadClientId} />
                 {transcription && (
                   <div className="p-2 rounded bg-muted/50 border text-xs text-muted-foreground mt-1">
                     <strong>Transcription:</strong> {transcription.slice(0, 200)}{transcription.length > 200 ? "…" : ""}
@@ -983,7 +983,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                     <Mic className="h-3.5 w-3.5 text-muted-foreground" />
                     Add Voice Note (optional)
                   </Label>
-                  <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} />
+                  <VoiceNoteRecorder onTranscribed={handleVoiceTranscribed} leadClientId={leadClientId} />
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
