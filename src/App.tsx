@@ -40,6 +40,7 @@ const persister = createSyncStoragePersister({
 });
 
 const persistOptions = {
+  persister,
   maxAge: 24 * 60 * 60 * 1000, // 24 hours
   buster: "kapture-v1",
   dehydrateOptions: {
