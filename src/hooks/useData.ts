@@ -24,7 +24,7 @@ type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
 type OrgFeaturesRow = Database["public"]["Tables"]["org_features"]["Row"];
 
-const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000, gcTime: 10 * 60 * 1000 } as const;
+const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000 } as const;
 
 type OrgFeaturesPatch = Partial<Pick<OrgFeaturesRow, "schedule_follow_up" | "linkedin_scanner_enabled">>;
 
@@ -178,7 +178,6 @@ export function useMyProfile() {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -212,7 +211,6 @@ export function useUserRoles() {
     },
     enabled: isAdmin,
     staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -362,7 +360,6 @@ export function useUpcomingFollowUps() {
       return data;
     },
     staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
   });
 }

@@ -32,7 +32,14 @@ import { toast } from "sonner";
 // Lazy-loaded: Recharts (~480KB) only fetched when analytics page is visited
 const AnalyticsPage = lazy(() => import("./pages/Analytics"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 24 * 60 * 60 * 1000,
+      staleTime: 2 * 60 * 1000,
+    },
+  },
+});
 
 const persister = createSyncStoragePersister({
   storage: window.localStorage,
