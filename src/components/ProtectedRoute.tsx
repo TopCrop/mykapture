@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, userRole } = useAuth();
-  const { hasOrg, orgStatus, loading: orgLoading } = useOrg();
+  const { hasOrg, orgStatus, loading: orgLoading, orgFetchFailed } = useOrg();
 
   if (loading || orgLoading) {
     return (
@@ -24,8 +24,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // If user has no org and isn't super_admin, redirect to org-setup
-  if (!hasOrg && userRole !== "super_admin") {
+  // Only redirect to /org-setup when the membership query SUCCEEDED with no org.
+  // If the lookup failed (offline / network error) and we have no cached org,
+  // render children anyway — the offline banner already signals the issue.
+  if (!hasOrg && !orgFetchFailed && userRole !== "super_admin") {
     if (window.location.pathname !== "/org-setup") {
       return <Navigate to="/org-setup" replace />;
     }
