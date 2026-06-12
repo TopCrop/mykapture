@@ -270,6 +270,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
     if (!user) return;
     const finalClassification = classOverride || scoring.classification;
     const leadData = {
+      id: leadClientId,
       name,
       title: title || null,
       company: company || null,
