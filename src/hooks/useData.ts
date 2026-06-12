@@ -24,7 +24,7 @@ type UserRoleRow = Database["public"]["Tables"]["user_roles"]["Row"];
 type ContactSubmissionRow = Database["public"]["Tables"]["contact_submissions"]["Row"];
 type OrgFeaturesRow = Database["public"]["Tables"]["org_features"]["Row"];
 
-const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000, gcTime: 10 * 60 * 1000 } as const;
+const CACHE_DEFAULTS = { staleTime: 2 * 60 * 1000 } as const;
 
 type OrgFeaturesPatch = Partial<Pick<OrgFeaturesRow, "schedule_follow_up" | "linkedin_scanner_enabled">>;
 
