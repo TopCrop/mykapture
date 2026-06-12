@@ -546,6 +546,15 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
         </DialogHeader>
 
         <div className="space-y-4">
+          {!isOnline && !qrMode && (
+            <div className="flex items-start gap-2 rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs text-warning-foreground">
+              <WifiOff className="h-4 w-4 mt-0.5 text-warning shrink-0" />
+              <span>
+                No connection — AI card scanning is unavailable. You can photograph the card for your records and enter details manually.
+              </span>
+            </div>
+          )}
+
           {/* Camera viewfinder */}
           {cameraActive && (
             <div className="relative rounded-lg overflow-hidden border bg-black">
