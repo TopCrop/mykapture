@@ -17,9 +17,42 @@ interface TranscriptionResult {
 
 interface VoiceNoteRecorderProps {
   onTranscribed: (result: TranscriptionResult, voiceNoteUrl: string) => void;
+  leadClientId: string;
 }
 
-export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
+const OFFLINE_PENDING_URL = "offline-pending";
+const OFFLINE_PENDING_MSG = "[Voice note pending — will upload and transcribe when online]";
+const TIMEOUT_MS = 20_000;
+
+function blobToBase64Async(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, controller: AbortController): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => {
+      controller.abort();
+      const e = new Error("Request timed out");
+      (e as any).name = "TimeoutError";
+      reject(e);
+    }, ms);
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); }
+    );
+  });
+}
+
+export function VoiceNoteRecorder({ onTranscribed, leadClientId }: VoiceNoteRecorderProps) {
   const { user } = useAuth();
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -100,44 +133,58 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
   const submitRecording = useCallback(async () => {
     if (!recordedBlob) return;
     await processRecording(recordedBlob);
-  }, [recordedBlob, user]);
+  }, [recordedBlob, user, leadClientId]);
+
+  const fallbackToOfflineQueue = async (webmBlob: Blob, reason: "offline" | "slow") => {
+    if (!user) return;
+    try {
+      await queueVoiceNoteOffline(webmBlob, user.id, leadClientId);
+      toast(
+        reason === "slow"
+          ? "Slow connection — voice note saved on device, will upload when stable."
+          : "You're offline — voice note saved locally and will sync when you're back online.",
+        { icon: <WifiOff className="h-4 w-4" /> }
+      );
+      onTranscribed({ transcription: OFFLINE_PENDING_MSG }, OFFLINE_PENDING_URL);
+      discardRecording();
+    } catch {
+      toast.error("Failed to save voice note offline");
+    }
+  };
 
   const processRecording = async (webmBlob: Blob) => {
     if (!user) return;
     setTranscribing(true);
 
     try {
-      // Offline fallback: skip upload & transcription, use local blob URL
       if (!navigator.onLine) {
-        const blobUrl = URL.createObjectURL(webmBlob);
-        toast("Voice note saved locally. Will transcribe when back online.", {
-          icon: <WifiOff className="h-4 w-4" />,
-        });
-        onTranscribed(
-          { transcription: "[Voice note recorded offline — transcription pending]" },
-          blobUrl
-        );
-        discardRecording();
+        await fallbackToOfflineQueue(webmBlob, "offline");
         return;
       }
 
-      const fileName = `${user.id}/${Date.now()}.webm`;
-      const { error: uploadErr } = await supabase.storage
-        .from("voice-notes")
-        .upload(fileName, webmBlob, { contentType: "audio/webm" });
+      // Upload with 20s timeout
+      const fileName = `${user.id}/${leadClientId}.webm`;
+      const uploadController = new AbortController();
+      let uploadErr: any = null;
+      try {
+        const uploadPromise = supabase.storage
+          .from("voice-notes")
+          .upload(fileName, webmBlob, { contentType: "audio/webm", upsert: true });
+        const { error } = await withTimeout(uploadPromise, TIMEOUT_MS, uploadController);
+        uploadErr = error;
+      } catch (e: any) {
+        uploadErr = e;
+      }
 
       if (uploadErr) {
-        // Upload failed — could be network issue mid-request
-        if (!navigator.onLine || uploadErr.message?.includes("fetch")) {
-          await queueVoiceNoteOffline(webmBlob, user.id);
-          toast("You're offline — voice note saved locally and will sync when you're back online.", {
-            icon: <WifiOff className="h-4 w-4" />,
-          });
-          onTranscribed(
-            { transcription: "", summary: "Voice note pending — saved offline for later transcription." },
-            "offline-pending"
-          );
-          discardRecording();
+        if (
+          !navigator.onLine ||
+          uploadErr.name === "TimeoutError" ||
+          uploadErr.name === "AbortError" ||
+          uploadErr instanceof TypeError ||
+          (uploadErr.message || "").toLowerCase().includes("fetch")
+        ) {
+          await fallbackToOfflineQueue(webmBlob, navigator.onLine ? "slow" : "offline");
           return;
         }
         throw uploadErr;
@@ -146,27 +193,24 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
       const { data: urlData } = await supabase.storage
         .from("voice-notes")
         .createSignedUrl(fileName, 60 * 60 * 24 * 365);
-
       const voiceNoteUrl = urlData?.signedUrl || fileName;
 
-      const arrayBuffer = await webmBlob.arrayBuffer();
-      const uint8 = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < uint8.length; i++) {
-        binary += String.fromCharCode(uint8[i]);
-      }
-      const audioBase64 = btoa(binary);
+      const audioBase64 = await blobToBase64Async(webmBlob);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-voice`,
-        {
+      // Transcribe with 20s timeout
+      const transcribeController = new AbortController();
+      const response = await withTimeout(
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe-voice`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ audioBase64, format: "webm" }),
-        }
+          signal: transcribeController.signal,
+        }),
+        TIMEOUT_MS,
+        transcribeController
       );
 
       if (!response.ok) {
@@ -180,21 +224,13 @@ export function VoiceNoteRecorder({ onTranscribed }: VoiceNoteRecorderProps) {
       toast.success("Voice note transcribed!");
     } catch (error: any) {
       console.error("Voice note error:", error);
-      // Network error fallback
-      if (error instanceof TypeError && !navigator.onLine) {
-        try {
-          await queueVoiceNoteOffline(webmBlob, user.id);
-          toast("You're offline — voice note saved locally and will sync when you're back online.", {
-            icon: <WifiOff className="h-4 w-4" />,
-          });
-          onTranscribed(
-            { transcription: "", summary: "Voice note pending — saved offline for later transcription." },
-            "offline-pending"
-          );
-          discardRecording();
-        } catch {
-          toast.error("Failed to save voice note offline");
-        }
+      const isNetwork =
+        error?.name === "TimeoutError" ||
+        error?.name === "AbortError" ||
+        error instanceof TypeError ||
+        !navigator.onLine;
+      if (isNetwork) {
+        await fallbackToOfflineQueue(webmBlob, navigator.onLine ? "slow" : "offline");
       } else {
         toast.error(error.message || "Failed to process voice note");
       }
