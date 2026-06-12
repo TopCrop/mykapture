@@ -189,13 +189,30 @@ export function BusinessCardScanner({ open, onClose, onExtracted }: BusinessCard
   const [qrMode, setQrMode] = useState(false);
   const [qrSource, setQrSource] = useState<string | null>(null);
   const [scanStatus, setScanStatus] = useState<string | null>(null);
-  
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+  useEffect(() => {
+    const update = () => setIsOnline(navigator.onLine);
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const qrFileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const qrAnimFrameRef = useRef<number | null>(null);
   const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const autoSaveIfEnabled = (dataUrl: string, contact?: ExtractedContact | null) => {
+    if (localStorage.getItem("kapture.autoSaveCards") !== "false") {
+      downloadPreview(dataUrl, contact ?? null);
+    }
+  };
 
   const stopCamera = useCallback(() => {
     if (qrAnimFrameRef.current) {
