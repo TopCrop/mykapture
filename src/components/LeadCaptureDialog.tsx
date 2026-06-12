@@ -302,14 +302,64 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
       return;
     }
 
-    try {
-      const created = await createLead.mutateAsync(leadData);
+    const queueAsOffline = (reason: "offline" | "slow") => {
+      if (!orgId || !user?.id) {
+        toast.error("Cannot save offline without an organization context.");
+        return false;
+      }
+      queueLeadOffline(leadData, { orgId, userId: user.id });
+      toast.success(
+        reason === "slow"
+          ? "Slow connection — lead saved on device and will sync automatically"
+          : "Lead saved offline! Will sync when connected."
+      );
+      resetForm();
+      onClose();
+      return true;
+    };
 
-      if (showFollowUp && bookFollowUp && followUpDate && created) {
+    const isNetworkError = (err: any) => {
+      if (!err) return false;
+      if (err.name === "AbortError" || err.name === "TimeoutError") return true;
+      if (err instanceof TypeError) return true;
+      const msg = (err.message || "").toString().toLowerCase();
+      return (
+        msg.includes("failed to fetch") ||
+        msg.includes("networkerror") ||
+        msg.includes("network request failed") ||
+        msg.includes("timeout") ||
+        msg.includes("load failed")
+      );
+    };
+
+    let created: any;
+    try {
+      created = await Promise.race([
+        createLead.mutateAsync(leadData),
+        new Promise((_, reject) =>
+          setTimeout(() => {
+            const e = new Error("Request timed out");
+            (e as any).name = "TimeoutError";
+            reject(e);
+          }, 10_000)
+        ),
+      ]);
+    } catch (error: any) {
+      if (isNetworkError(error)) {
+        queueAsOffline("slow");
+        return;
+      }
+      console.error("Lead capture failed:", error);
+      toast.error(error?.message || "Failed to capture lead. Please try again.");
+      return;
+    }
+
+    // Lead is saved — secondary actions must not block success
+    if (showFollowUp && bookFollowUp && followUpDate && created) {
+      try {
         const [hours, minutes] = followUpTime.split(":").map(Number);
         const bookingDate = new Date(followUpDate);
         bookingDate.setHours(hours, minutes, 0, 0);
-
         await createBooking.mutateAsync({
           lead_id: created.id,
           booked_by: user.id,
@@ -317,28 +367,34 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
           duration_minutes: parseInt(followUpDuration),
           meeting_type: meetingType,
         });
+      } catch (err) {
+        console.error("Follow-up booking failed:", err);
+        toast.warning("Lead saved, but follow-up booking failed — add it from the lead detail page");
       }
+    }
 
-      // Notify tagged rep
-      if (attentionToUserId && created) {
+    if (attentionToUserId && created) {
+      try {
         const captureName = user.user_metadata?.full_name || user.email || "A teammate";
         const leadLabel = `${name}${company ? ` (${company})` : ""}`;
-        await supabase.from("notifications" as any).insert({
+        const { error: notifError } = await supabase.from("notifications" as any).insert({
           user_id: attentionToUserId,
           type: "attention",
           lead_id: created.id,
           message: `${captureName} tagged you on a lead: ${leadLabel}`,
         });
+        if (notifError) throw notifError;
+      } catch (err) {
+        console.error("Notification insert failed:", err);
+        toast.warning("Lead saved, but tagged rep wasn't notified — you can re-tag from the lead detail page");
       }
-
-      toast.success("Lead captured successfully!");
-      resetForm();
-      onClose();
-    } catch (error: any) {
-      console.error("Lead capture failed:", error);
-      toast.error(error.message || "Failed to capture lead. Please try again.");
     }
+
+    toast.success("Lead captured successfully!");
+    resetForm();
+    onClose();
   };
+
 
   const isQuickMode = captureMode === "quick";
 
@@ -554,7 +610,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 }
               }} disabled={!name.trim() || createLead.isPending}>
                 {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
-                {!navigator.onLine ? "Save Offline" : "Capture Lead"}
+                {createLead.isPending ? "Saving…" : !navigator.onLine ? "Save Offline" : "Capture Lead"}
               </Button>
 
               <p className="text-[10px] text-muted-foreground text-center">
@@ -952,7 +1008,7 @@ export function LeadCaptureDialog({ open, onClose, mode = "full" }: LeadCaptureD
                 <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Back</Button>
                 <Button className="flex-1" onClick={handleSubmit} disabled={createLead.isPending}>
                   {createLead.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {!navigator.onLine ? "Save Offline" : "Capture Lead"}
+                  {createLead.isPending ? "Saving…" : !navigator.onLine ? "Save Offline" : "Capture Lead"}
                 </Button>
               </div>
             </div>
