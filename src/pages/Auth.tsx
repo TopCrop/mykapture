@@ -133,7 +133,30 @@ const AuthPage = () => {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      toast.success("Check your email for a password reset link.");
+      toast.success("Reset link sent. Check your inbox — and your spam/junk folder. The email comes from Kapture (via Lovable).", { duration: 8000 });
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    if (!email) {
+      toast.error("Enter your email above first.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin + "/dashboard",
+          shouldCreateUser: false,
+        },
+      });
+      if (error) throw error;
+      toast.success("Sign-in link sent. Check your inbox — and your spam/junk folder. The email comes from Kapture (via Lovable).", { duration: 8000 });
     } catch (error: any) {
       toast.error(error.message);
     } finally {
