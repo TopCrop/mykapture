@@ -299,6 +299,16 @@ const AuthPage = () => {
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   {view === "login" ? "Sign In" : "Create Account"}
                 </Button>
+                {view === "login" && (
+                  <button
+                    type="button"
+                    onClick={handleMagicLink}
+                    disabled={loading}
+                    className="w-full text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    Email me a one-time sign-in link instead
+                  </button>
+                )}
               </form>
 
               <p className="text-center text-xs text-muted-foreground">
