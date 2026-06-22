@@ -133,7 +133,30 @@ const AuthPage = () => {
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      toast.success("Check your email for a password reset link.");
+      toast.success("Reset link sent. Check your inbox — and your spam/junk folder. The email comes from Kapture (via Lovable).", { duration: 8000 });
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMagicLink = async () => {
+    if (!email) {
+      toast.error("Enter your email above first.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin + "/dashboard",
+          shouldCreateUser: false,
+        },
+      });
+      if (error) throw error;
+      toast.success("Sign-in link sent. Check your inbox — and your spam/junk folder. The email comes from Kapture (via Lovable).", { duration: 8000 });
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -196,7 +219,9 @@ const AuthPage = () => {
                 <h3 className="text-lg font-semibold text-foreground">Check your email</h3>
                 <p className="text-sm text-muted-foreground">
                   We've sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
-                  Please verify your email, then sign in.
+                </p>
+                <p className="text-xs text-muted-foreground pt-2">
+                  The email comes from <span className="font-medium text-foreground">Kapture</span> (sent via Lovable). If you don't see it in a minute, <span className="font-medium text-foreground">check your spam or junk folder</span> and mark it as "Not spam" so future emails reach your inbox.
                 </p>
               </div>
               <Button
@@ -221,6 +246,9 @@ const AuthPage = () => {
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   Send Reset Link
                 </Button>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  The reset email comes from <span className="font-medium text-foreground">Kapture</span> (via Lovable). If it doesn't arrive within a couple of minutes, check your <span className="font-medium text-foreground">spam/junk</span> folder. You can also try a one-time sign-in link from the sign in screen instead.
+                </p>
               </form>
               <button onClick={() => setView("login")} className="flex items-center justify-center gap-1 w-full text-xs font-medium text-primary hover:text-primary/80 transition-colors">
                 <ArrowLeft className="h-3 w-3" /> Back to sign in
@@ -271,6 +299,16 @@ const AuthPage = () => {
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   {view === "login" ? "Sign In" : "Create Account"}
                 </Button>
+                {view === "login" && (
+                  <button
+                    type="button"
+                    onClick={handleMagicLink}
+                    disabled={loading}
+                    className="w-full text-xs font-medium text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+                  >
+                    Email me a one-time sign-in link instead
+                  </button>
+                )}
               </form>
 
               <p className="text-center text-xs text-muted-foreground">
