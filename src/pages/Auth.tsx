@@ -246,6 +246,9 @@ const AuthPage = () => {
                   {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
                   Send Reset Link
                 </Button>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  The reset email comes from <span className="font-medium text-foreground">Kapture</span> (via Lovable). If it doesn't arrive within a couple of minutes, check your <span className="font-medium text-foreground">spam/junk</span> folder. You can also try a one-time sign-in link from the sign in screen instead.
+                </p>
               </form>
               <button onClick={() => setView("login")} className="flex items-center justify-center gap-1 w-full text-xs font-medium text-primary hover:text-primary/80 transition-colors">
                 <ArrowLeft className="h-3 w-3" /> Back to sign in
