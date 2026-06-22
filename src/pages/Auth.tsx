@@ -219,7 +219,9 @@ const AuthPage = () => {
                 <h3 className="text-lg font-semibold text-foreground">Check your email</h3>
                 <p className="text-sm text-muted-foreground">
                   We've sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
-                  Please verify your email, then sign in.
+                </p>
+                <p className="text-xs text-muted-foreground pt-2">
+                  The email comes from <span className="font-medium text-foreground">Kapture</span> (sent via Lovable). If you don't see it in a minute, <span className="font-medium text-foreground">check your spam or junk folder</span> and mark it as "Not spam" so future emails reach your inbox.
                 </p>
               </div>
               <Button
